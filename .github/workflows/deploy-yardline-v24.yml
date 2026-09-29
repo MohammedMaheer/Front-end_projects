@@ -1,0 +1,33 @@
+name: Deploy Yardline v24 to Vercel
+
+on:
+  push:
+    branches:
+      - yardline-v22-vercel-stage
+    paths:
+      - 'yardline-v24/**'
+      - '.github/workflows/deploy-yardline-v24.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: yardline-v24
+    env:
+      VERCEL_ORG_ID: team_ikh1dZDKfLcxBnM5cXZCZOke
+      VERCEL_PROJECT_ID: prj_s45szrFg8qPpq0unlDM3sgPZFFZ2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Vercel token
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "VERCEL_TOKEN secret is not configured in this repository."
+            exit 2
+          fi
+
+      - name: Deploy production
+        run: npx --yes vercel@latest --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
