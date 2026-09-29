@@ -1,0 +1,15 @@
+name: Yardline Runner Probe
+
+on:
+  push:
+    branches:
+      - yardline-v22-vercel-stage
+    paths:
+      - '.github/workflows/yardline-runner-probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe
+        run: echo "runner-ok"
