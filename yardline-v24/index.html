@@ -1978,7 +1978,34 @@ th{font-size:13.5px!important;padding:15px 16px!important}td{font-size:15px!impo
 
 </style>
 
-<!-- Yard Line v25: typography readability pass. Font sizes below 16px selectively increased without changing card dimensions, spacing, data, interactions, or responsive layout. -->
+<!-- Yard Line v25: typography readability pass.
+     Font sizes below 16px were selectively increased without changing card dimensions,
+     spacing, data structures, interactions, or responsive layout. -->
+
+<style id="v26-visual-qa-fixes">
+/* Yard Line v26.1 - visual QA fixes */
+.topbar-right .primary-button{white-space:nowrap}
+.employee-cert-jump-button{white-space:nowrap;flex:0 0 auto;min-height:34px}
+.employee-certificate-editor-head>div{min-width:0}
+.employee-certificate-editor-head span{max-width:520px}
+input[type="file"]::file-selector-button{
+  appearance:none;border:1px solid var(--line-strong);border-radius:7px;background:#fff;color:#35404d;
+  padding:8px 11px;margin-right:10px;font-weight:650;font-size:12.5px;cursor:pointer;
+}
+input[type="file"]::file-selector-button:hover{background:#f7f8fa;border-color:#cbd1d8}
+html:has(body.modal-open){overflow:hidden}
+.dashboard-lower-overview .panel:nth-child(2) .panel-header{gap:6px}
+.dashboard-lower-overview .panel:nth-child(2) .eyebrow,
+.dashboard-lower-overview .panel:nth-child(2) h3{white-space:nowrap}
+@media(max-height:820px){
+  .sidebar{overflow-y:auto;overscroll-behavior:contain}
+  .sidebar-footer{margin-top:12px}
+}
+@media(max-width:760px){
+  .employee-certificate-editor-head{align-items:stretch;flex-direction:column}
+  .employee-cert-jump-button{width:100%}
+}
+</style>
 </head>
 <body>
   <div class="app-shell">
@@ -2433,6 +2460,7 @@ th{font-size:13.5px!important;padding:15px 16px!important}td{font-size:15px!impo
         <div class="employee-certificate-editor full" id="employeeCertificateEditor">
           <div class="employee-certificate-editor-head">
             <div><strong>Certificates & training</strong><span>Add certificate records directly while editing this employee. Changes save immediately to the employee file.</span></div>
+            <button type="button" class="secondary-button employee-cert-jump-button" onclick="document.querySelector('#employeeCertificateEditor .employee-certificate-add')?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>document.getElementById('employeeEditCertType')?.focus(),250)">+ Add Certificate</button>
           </div>
           <div id="employeeEditCertificateList" class="employee-edit-certificate-list"></div>
           <div class="employee-certificate-add">
@@ -2948,6 +2976,7 @@ renderAll();updateAssignmentFields();
   const V24_MARKER='Yard Line v24 — selection, exports, SLA and full overview';
   const employeeSelection=new Set();
   const vehicleSelection=new Set();
+  window.__yardlineSelections={employee:employeeSelection,vehicle:vehicleSelection};
   let exportContext='employee';
 
   const xmlEsc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[m]));
@@ -3117,6 +3146,228 @@ renderAll();updateAssignmentFields();
   // Initial enhancement pass after the v23 renderer has completed.
   ensureBulkBar('employee');ensureBulkBar('vehicle');decorateRows('employee');decorateRows('vehicle');ensureSlaCenter();renderSlaCenter();
   console.info(V24_MARKER);
+})();
+</script>
+
+
+<!-- Yard Line v26: premium PDF/reporting + complete certificate record management -->
+<style id="yardline-v26-styles">
+.certificate-record-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.certificate-record-actions .row-action{min-height:31px;padding:6px 10px}
+.row-action.danger-row,.secondary-button.danger-row{color:#b42318;border-color:#f1c7c2;background:#fff7f6}
+.row-action.danger-row:hover,.secondary-button.danger-row:hover{background:#fff0ee;border-color:#e9aaa4}
+.employee-edit-certificate-row{grid-template-columns:minmax(155px,1.15fr) minmax(112px,.72fr) minmax(100px,.62fr) auto!important}
+.employee-edit-certificate-row .certificate-record-actions{justify-content:flex-end}
+.certificate-record-modal-card{width:min(780px,94vw)!important}
+.certificate-edit-banner{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:1px solid #dfe7f5;border-radius:11px;background:#f7f9fd;grid-column:1/-1}
+.certificate-edit-banner .banner-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:9px;background:#e8efff;color:#244eb6;font-weight:850;flex:0 0 34px}
+.certificate-edit-banner strong{display:block;font-size:13.5px;color:#243041}.certificate-edit-banner span{display:block;margin-top:3px;font-size:12.5px;line-height:1.45;color:#6f7b8d}
+.certificate-current-file{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid #e3e8ef;border-radius:9px;background:#fff}
+.certificate-current-file>div{min-width:0}.certificate-current-file span{display:block;color:#7d8998;font-size:11.5px;text-transform:uppercase;letter-spacing:.45px;font-weight:760}.certificate-current-file strong{display:block;margin-top:3px;font-size:13px;color:#2d3948;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.certificate-remove-file{display:flex!important;flex-direction:row!important;align-items:center!important;gap:8px!important;padding:10px 12px;border:1px solid #f0d6d2;border-radius:9px;background:#fff8f7}.certificate-remove-file input{width:auto!important}.certificate-remove-file span{color:#9d332a!important;text-transform:none!important;letter-spacing:0!important}
+.certificate-edit-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:2px}.certificate-edit-foot .right-actions{display:flex;gap:8px;flex-wrap:wrap}
+.delete-confirm-card{width:min(520px,92vw)!important}.delete-confirm-body{padding:18px 20px 6px}.delete-confirm-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:#fff0ef;color:#b42318;font-size:20px;font-weight:850;margin-bottom:12px}.delete-confirm-body h4{margin:0;font-size:16px;color:#202936}.delete-confirm-body p{margin:8px 0 0;color:#687586;font-size:13px;line-height:1.55}.delete-confirm-details{margin-top:14px;padding:12px;border:1px solid #e5e9ef;border-radius:10px;background:#fafbfc;display:grid;gap:6px}.delete-confirm-details span{font-size:12.5px;color:#657184}.delete-confirm-details strong{color:#253142}
+.profile-cert-actions{display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap;min-width:190px}
+.compliance-table .action-stack{gap:5px!important}
+@media(max-width:760px){.employee-edit-certificate-row{grid-template-columns:1fr!important}.employee-edit-certificate-row .certificate-record-actions{justify-content:flex-start}.certificate-edit-foot{align-items:stretch;flex-direction:column}.certificate-edit-foot .right-actions{width:100%}.certificate-edit-foot .right-actions button,.certificate-edit-foot>button{flex:1}.profile-cert-actions{min-width:0;justify-content:flex-start}}
+</style>
+
+<div class="modal" id="certificateRecordModal">
+  <div class="modal-card certificate-record-modal-card">
+    <div class="modal-header"><div><span class="eyebrow">Certificate record</span><h3>Edit employee certificate</h3></div><button type="button" class="close-modal v26-close-cert-editor" aria-label="Close dialog">×</button></div>
+    <form id="certificateRecordForm" class="form-grid modal-form">
+      <input id="certificateRecordEmployeeId" type="hidden" />
+      <input id="certificateRecordId" type="hidden" />
+      <div class="certificate-edit-banner"><div class="banner-icon">C</div><div><strong id="certificateRecordEmployeeLabel">Employee</strong><span>Edit is for correcting the certificate record. Use Renew when recording a genuine renewal so the previous expiry stays in audit history.</span></div></div>
+      <label><span>Certificate Type</span><select id="certificateRecordType" required></select></label>
+      <label><span>Issue Date</span><input id="certificateRecordIssue" type="date" /></label>
+      <label><span>Current Expiry Date</span><input id="certificateRecordExpiry" type="date" /></label>
+      <label><span>Current Status</span><input id="certificateRecordStatus" readonly /></label>
+      <div class="certificate-current-file" id="certificateCurrentFileBox"><div><span>Current certificate copy</span><strong id="certificateCurrentFileName">No file attached</strong></div><button type="button" class="row-action" id="certificateCurrentFileView">View</button></div>
+      <label class="full upload-box"><span>Replace Certificate Copy</span><input id="certificateRecordFile" type="file" accept=".pdf,.jpg,.jpeg,.png" /><small>Leave empty to keep the current attachment. PDF, JPG, JPEG and PNG are supported.</small></label>
+      <label class="full certificate-remove-file" id="certificateRemoveFileLabel"><input id="certificateRecordRemoveFile" type="checkbox" /><span>Remove the current certificate attachment</span></label>
+      <label class="full"><span>Notes</span><textarea id="certificateRecordNotes" placeholder="Training provider, certificate number, correction note or other remarks"></textarea></label>
+      <div class="certificate-edit-foot"><button type="button" class="secondary-button danger-row" id="certificateRecordDeleteButton">Delete Certificate</button><div class="right-actions"><button type="button" class="secondary-button v26-close-cert-editor">Cancel</button><button class="primary-button" type="submit">Save Certificate Changes</button></div></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="certificateDeleteModal">
+  <div class="modal-card delete-confirm-card">
+    <div class="modal-header"><div><span class="eyebrow">Confirm deletion</span><h3>Delete certificate record?</h3></div><button type="button" class="close-modal v26-close-cert-delete" aria-label="Close dialog">×</button></div>
+    <div class="delete-confirm-body"><div class="delete-confirm-icon">!</div><h4 id="certificateDeleteTitle">Certificate</h4><p id="certificateDeleteMessage">This removes the active certificate record and its current attachment reference. Renewal history is retained as an audit trail.</p><div class="delete-confirm-details" id="certificateDeleteDetails"></div></div>
+    <div class="form-actions" style="padding:14px 20px 20px"><button type="button" class="secondary-button v26-close-cert-delete">Cancel</button><button type="button" class="secondary-button danger-row" id="certificateDeleteConfirmButton">Delete Certificate</button></div>
+  </div>
+</div>
+
+<script id="yardline-v26-script">
+(()=>{
+  const V26_MARKER='Yard Line v26.1 — premium PDF reporting, certificate management and visual QA polish';
+  let certReturnContext='profile';
+  let deleteReturnContext='profile';
+
+  const closeNewModal=id=>{document.getElementById(id)?.classList.remove('open');if(!document.querySelector('.modal.open'))document.body.classList.remove('modal-open')};
+  document.querySelectorAll('.v26-close-cert-editor').forEach(b=>b.addEventListener('click',()=>closeNewModal('certificateRecordModal')));
+  document.querySelectorAll('.v26-close-cert-delete').forEach(b=>b.addEventListener('click',()=>closeNewModal('certificateDeleteModal')));
+  document.getElementById('certificateRecordModal')?.addEventListener('click',e=>{if(e.target.id==='certificateRecordModal')closeNewModal('certificateRecordModal')});
+  document.getElementById('certificateDeleteModal')?.addEventListener('click',e=>{if(e.target.id==='certificateDeleteModal')closeNewModal('certificateDeleteModal')});
+
+  function certRecord(empId,certId){const e=employeeById(empId),c=e?.certificates?.find(x=>String(x.id)===String(certId));return{e,c}}
+  function contextAfterCertificateChange(empId,ctx){
+    if(ctx==='employee-editor')return openEmployeeEditor(empId);
+    if(ctx==='compliance'){navigate('compliance');renderCompliance();return}
+    if(ctx==='training'){trainingWorkspaceMode='matrix';navigate('training');renderTraining();return}
+    if(ctx==='sla'){navigate('notifications');renderWhatsApp();return}
+    openEmployee(empId);
+  }
+  function setCertificateTypeOptions(select,current){
+    const all=state.certificateTypes.filter(t=>t.active||t.name===current);
+    select.innerHTML=all.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}${t.active?'':' · inactive type'}</option>`).join('');
+    if([...select.options].some(o=>o.value===current))select.value=current;
+  }
+  window.openCertificateRecordEditor=(empId,certId,ctx='profile')=>{
+    const {e,c}=certRecord(empId,certId);if(!e||!c)return notify('Certificate not found','The certificate record could not be opened.');
+    certReturnContext=ctx;
+    document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));
+    document.getElementById('certificateRecordEmployeeId').value=e.id;
+    document.getElementById('certificateRecordId').value=c.id;
+    document.getElementById('certificateRecordEmployeeLabel').textContent=`${e.id} · ${e.name} · ${e.role}`;
+    setCertificateTypeOptions(document.getElementById('certificateRecordType'),c.type);
+    document.getElementById('certificateRecordIssue').value=c.issue||'';
+    document.getElementById('certificateRecordExpiry').value=c.expiry||'';
+    document.getElementById('certificateRecordStatus').value=trainingRecordRisk(c);
+    document.getElementById('certificateRecordNotes').value=c.notes||'';
+    document.getElementById('certificateRecordFile').value='';
+    document.getElementById('certificateRecordRemoveFile').checked=false;
+    const fileName=document.getElementById('certificateCurrentFileName'),view=document.getElementById('certificateCurrentFileView'),remove=document.getElementById('certificateRemoveFileLabel');
+    fileName.textContent=c.fileName||'No file attached';view.style.display=c.fileName?'inline-flex':'none';remove.style.display=c.fileName?'flex':'none';
+    view.onclick=()=>viewEmployeeCertDocument(e.id,c.id);
+    showModal('certificateRecordModal');
+  };
+  window.openCertificateDeleteConfirm=(empId,certId,ctx='profile')=>{
+    const {e,c}=certRecord(empId,certId);if(!e||!c)return;
+    deleteReturnContext=ctx;document.getElementById('certificateDeleteConfirmButton').dataset.employeeId=e.id;document.getElementById('certificateDeleteConfirmButton').dataset.certId=c.id;
+    const required=requiredTypesForEmployee(e).some(t=>t.name===c.type);
+    document.getElementById('certificateDeleteTitle').textContent=`${c.type} · ${e.name}`;
+    document.getElementById('certificateDeleteMessage').textContent=required?'This certificate is currently required for this employee. Deleting it will immediately mark the requirement as missing and may block future allocations. Renewal history will remain in the audit trail.':'This removes the active certificate record and its current attachment reference. Renewal history will remain in the audit trail.';
+    document.getElementById('certificateDeleteDetails').innerHTML=`<span><strong>Employee:</strong> ${esc(e.id)} · ${esc(e.name)}</span><span><strong>Certificate:</strong> ${esc(c.type)}</span><span><strong>Current expiry:</strong> ${fmt(c.expiry)}</span><span><strong>Document:</strong> ${esc(c.fileName||'No attachment')}</span>`;
+    closeNewModal('certificateRecordModal');showModal('certificateDeleteModal');
+  };
+
+  document.getElementById('certificateRecordDeleteButton')?.addEventListener('click',()=>openCertificateDeleteConfirm(document.getElementById('certificateRecordEmployeeId').value,document.getElementById('certificateRecordId').value,certReturnContext));
+  document.getElementById('certificateDeleteConfirmButton')?.addEventListener('click',()=>{
+    const b=document.getElementById('certificateDeleteConfirmButton'),empId=b.dataset.employeeId,certId=b.dataset.certId,{e,c}=certRecord(empId,certId);if(!e||!c)return closeNewModal('certificateDeleteModal');
+    const idx=e.certificates.findIndex(x=>String(x.id)===String(certId));if(idx<0)return;
+    const wasRequired=requiredTypesForEmployee(e).some(t=>t.name===c.type),type=c.type,url=sessionFiles?.[c.id];
+    if(url){try{URL.revokeObjectURL(url)}catch{}delete sessionFiles[c.id]}
+    e.certificates.splice(idx,1);saveState();renderAll();closeNewModal('certificateDeleteModal');notify('Certificate deleted',`${type} was removed from File # ${e.id}.${wasRequired?' The employee is now missing a required certificate.':''} Renewal history was retained.`);contextAfterCertificateChange(e.id,deleteReturnContext);
+  });
+
+  document.getElementById('certificateRecordForm')?.addEventListener('submit',e=>{
+    e.preventDefault();const empId=document.getElementById('certificateRecordEmployeeId').value,certId=document.getElementById('certificateRecordId').value,{e:emp,c}=certRecord(empId,certId);if(!emp||!c)return notify('Certificate not found','The record changed before it could be saved.');
+    const type=document.getElementById('certificateRecordType').value.trim(),duplicate=emp.certificates.some(x=>String(x.id)!==String(c.id)&&x.type===type);if(duplicate)return notify('Duplicate certificate',`${emp.name} already has an active ${type} record.`);
+    const t=certTypeByName(type),newFile=document.getElementById('certificateRecordFile').files[0],removeFile=document.getElementById('certificateRecordRemoveFile').checked;
+    if(t?.documentRequired&&!newFile&&(removeFile||!c.fileName))return notify('Certificate copy required',`${type} requires a certificate attachment. Upload a replacement before saving.`);
+    if(!c.baseExpiry)c.baseExpiry=c.expiry||document.getElementById('certificateRecordExpiry').value||'';
+    c.type=type;c.issue=document.getElementById('certificateRecordIssue').value;c.expiry=document.getElementById('certificateRecordExpiry').value;c.notes=document.getElementById('certificateRecordNotes').value.trim();
+    if(removeFile){const old=sessionFiles?.[c.id];if(old){try{URL.revokeObjectURL(old)}catch{}delete sessionFiles[c.id]}c.fileName='';c.validated=false}
+    if(newFile){const old=sessionFiles?.[c.id];if(old){try{URL.revokeObjectURL(old)}catch{}delete sessionFiles[c.id]}c.fileName=newFile.name;c.validated=true;sessionFiles[c.id]=URL.createObjectURL(newFile)}else c.validated=!!c.fileName;
+    saveState();renderAll();closeNewModal('certificateRecordModal');notify('Certificate updated',`${type} for File # ${emp.id} was updated. Use Renew for future expiry extensions that need an audit event.`);contextAfterCertificateChange(emp.id,certReturnContext);
+  });
+
+  const originalPrepareModalForCreate=prepareModalForCreate;
+  prepareModalForCreate=function(id){
+    if(id==='addCertificateModal'){
+      const f=document.getElementById('addCertificateForm');f?.reset();populateFilters();modalTitle('addCertificateModal','Add certificate to employee','Save Certificate');
+      return;
+    }
+    return originalPrepareModalForCreate(id);
+  };
+  window.openAddCertificateFor=(id)=>{closeModal('employeeProfileModal');prepareModalForCreate('addCertificateModal');if([...document.getElementById('addCertEmployee').options].some(o=>o.value===String(id)))document.getElementById('addCertEmployee').value=String(id);showModal('addCertificateModal')};
+  window.openCertificateForEmployee=(id='',type='')=>{closeModal('employeeProfileModal');closeModal('recordModal');prepareModalForCreate('addCertificateModal');if(id&&[...document.getElementById('addCertEmployee').options].some(o=>o.value===String(id)))document.getElementById('addCertEmployee').value=String(id);if(type&&[...document.getElementById('addCertType').options].some(o=>o.value===type))document.getElementById('addCertType').value=type;showModal('addCertificateModal')};
+
+  renderEmployeeEditCertificates=function(emp){
+    const editor=document.getElementById('employeeCertificateEditor'),list=document.getElementById('employeeEditCertificateList'),type=document.getElementById('employeeEditCertType');if(!editor||!list||!type)return;
+    if(!emp){editor.classList.remove('active');list.innerHTML='';type.innerHTML='';return}editor.classList.add('active');const certs=emp.certificates||[];
+    list.innerHTML=certs.length?certs.map(c=>{const r=trainingRecordRisk(c);return `<div class="employee-edit-certificate-row"><strong>${esc(c.type)}</strong><span>${c.expiry?fmt(c.expiry):'No expiry'}</span><span>${r}</span><div class="certificate-record-actions"><button type="button" class="row-action" onclick="openCertificateRecordEditor('${esc(emp.id)}','${esc(c.id)}','employee-editor')">Edit</button><button type="button" class="row-action" onclick="openRenewalFor('${esc(emp.id)}','${esc(c.type)}')">Renew</button><button type="button" class="row-action danger-row" onclick="openCertificateDeleteConfirm('${esc(emp.id)}','${esc(c.id)}','employee-editor')">Delete</button></div></div>`}).join(''):'<div class="employee-certificate-empty">No certificate records yet. Add the first certificate below.</div>';
+    const existing=new Set(certs.map(c=>c.type)),available=state.certificateTypes.filter(t=>t.active&&!existing.has(t.name));type.innerHTML=available.length?available.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join(''):'<option value="" disabled selected>All active certificate types are already recorded</option>';
+  };
+
+  function enhanceProfileCertificateActions(id){
+    const emp=employeeById(id),root=document.getElementById('employeeProfileContent');if(!emp||!root)return;const section=[...root.querySelectorAll('.profile-section')].find(s=>s.querySelector('.profile-section-head h4')?.textContent.trim()==='Training & certification');if(!section)return;
+    const rows=[...section.querySelectorAll('tbody tr')];(emp.certificates||[]).forEach((c,i)=>{const tr=rows[i],cell=tr?.lastElementChild;if(!cell)return;cell.innerHTML=`<div class="profile-cert-actions"><button class="row-action" onclick="openCertificateRecordEditor('${esc(emp.id)}','${esc(c.id)}','profile')">Edit</button><button class="row-action primary-row" onclick="openRenewalFor('${esc(emp.id)}','${esc(c.type)}')">Renew</button><button class="row-action danger-row" onclick="openCertificateDeleteConfirm('${esc(emp.id)}','${esc(c.id)}','profile')">Delete</button></div>`});
+  }
+  const baseOpenEmployeeV26=window.openEmployee;window.openEmployee=id=>{baseOpenEmployeeV26(id);enhanceProfileCertificateActions(id)};
+
+  const baseRenderComplianceV26=renderCompliance;renderCompliance=function(){baseRenderComplianceV26();document.querySelectorAll('#complianceTableBody tr').forEach(tr=>{const review=[...tr.querySelectorAll('button')].find(b=>/openComplianceRecord\('/.test(b.getAttribute('onclick')||''));if(!review)return;const m=(review.getAttribute('onclick')||'').match(/openComplianceRecord\('([^']+)'\)/);if(!m)return;const r=complianceRows().find(x=>String(x.id)===String(m[1]));if(!r||r.kind!=='Employee Certificate'||r.risk==='Missing')return;const stack=review.closest('.action-stack');if(!stack||stack.querySelector('.v26-cert-edit'))return;stack.insertAdjacentHTML('beforeend',`<button class="row-action v26-cert-edit" onclick="openCertificateRecordEditor('${esc(r.employeeId)}','${esc(r.id)}','compliance')">Edit</button><button class="row-action danger-row" onclick="openCertificateDeleteConfirm('${esc(r.employeeId)}','${esc(r.id)}','compliance')">Delete</button>`)});};
+  const baseOpenComplianceRecordV26=window.openComplianceRecord;window.openComplianceRecord=id=>{const r=complianceRows().find(x=>String(x.id)===String(id));baseOpenComplianceRecordV26(id);if(!r||r.kind!=='Employee Certificate'||r.risk==='Missing')return;const host=document.getElementById('recordModalContent');host?.insertAdjacentHTML('beforeend',`<div class="form-actions" style="margin-top:14px"><button class="secondary-button" onclick="closeModal('recordModal');openCertificateRecordEditor('${esc(r.employeeId)}','${esc(r.id)}','compliance')">Edit Certificate</button><button class="secondary-button" onclick="closeModal('recordModal');openRenewalFor('${esc(r.employeeId)}','${esc(r.name)}')">Record Renewal</button><button class="secondary-button danger-row" onclick="closeModal('recordModal');openCertificateDeleteConfirm('${esc(r.employeeId)}','${esc(r.id)}','compliance')">Delete Certificate</button></div>`)};
+
+  const baseSlaOpenV26=window.v24OpenSlaRecord;window.v24OpenSlaRecord=id=>{
+    const p=String(id).split(':');if(p[0]==='CERT'&&p.length>=3)return openCertificateRecordEditor(p[1],p.slice(2).join(':'),'sla');
+    if(p[0]==='MISS'&&p.length>=3){const t=state.certificateTypes.find(x=>String(x.id)===String(p.slice(2).join(':')));return openCertificateForEmployee(p[1],t?.name||'')}
+    return baseSlaOpenV26(id);
+  };
+  document.getElementById('matrixTableBody')?.addEventListener('click',ev=>{const cell=ev.target.closest('.matrix-status-cell');if(!cell||cell.classList.contains('missing'))return;const title=cell.getAttribute('title')||'';if(!title.includes(' · '))return;const row=cell.closest('tr'),person=row?.querySelector('.matrix-person-mini strong')?.textContent||'',empId=person.split('·')[0].trim(),type=title.split(' · ')[0],emp=employeeById(empId),cert=emp?.certificates?.find(c=>c.type===type);if(!emp||!cert)return;ev.preventDefault();ev.stopImmediatePropagation();openCertificateRecordEditor(emp.id,cert.id,'training')},true);
+
+  // ---- Premium PDF renderer -------------------------------------------------
+  const PDF_THEME={navy:[0.055,0.102,0.18],blue:[0.118,0.306,0.847],blueSoft:[0.93,0.953,1],text:[0.11,0.145,0.19],muted:[0.40,0.45,0.52],line:[0.87,0.89,0.92],surface:[0.976,0.98,0.988],green:[0.098,0.529,0.329],amber:[0.72,0.42,0],red:[0.78,0.235,0.282]};
+  const rgbA=(rgb,a)=>window.PDFLib.rgb(rgb[0],rgb[1],rgb[2]);
+  function safePdfText(v){return String(v??'').normalize('NFKD').replace(/[–—]/g,'-').replace(/[·•]/g,' | ').replace(/→/g,'->').replace(/≤/g,'<=').replace(/[^\x20-\x7E]/g,'?')}
+  async function ensurePremiumPdf(){if(window.PDFLib)return window.PDFLib;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});return window.PDFLib}
+  function wrapPdf(font,text,size,maxWidth){const words=safePdfText(text||'—').split(/\s+/),rows=[];let line='';for(const w of words){const test=line?line+' '+w:w;if(line&&font.widthOfTextAtSize(test,size)>maxWidth){rows.push(line);line=w}else line=test}if(line)rows.push(line);return rows.length?rows:['—']}
+  async function makePdfContext(doc,reportTitle){const {StandardFonts}=window.PDFLib;return{doc,font:await doc.embedFont(StandardFonts.Helvetica),bold:await doc.embedFont(StandardFonts.HelveticaBold),page:null,y:0,reportTitle}}
+  function addReportPage(ctx,sectionTitle='',sectionSub=''){
+    const {rgb}=window.PDFLib,p=ctx.doc.addPage([595.28,841.89]);ctx.page=p;ctx.y=742;
+    p.drawRectangle({x:0,y:772,width:595.28,height:69,color:rgb(...PDF_THEME.navy)});p.drawRectangle({x:38,y:792,width:34,height:34,color:rgb(...PDF_THEME.blue),borderRadius:6});p.drawText('YL',{x:47,y:803,size:13,font:ctx.bold,color:rgb(1,1,1)});p.drawText('YARD LINE OPERATIONS',{x:84,y:809,size:12,font:ctx.bold,color:rgb(1,1,1)});p.drawText('Workforce | Fleet | Compliance',{x:84,y:793,size:8.5,font:ctx.font,color:rgb(.72,.78,.87)});p.drawText(safePdfText(ctx.reportTitle),{x:557-ctx.bold.widthOfTextAtSize(safePdfText(ctx.reportTitle),8.5),y:804,size:8.5,font:ctx.bold,color:rgb(.84,.88,.94)});
+    if(sectionTitle){p.drawText(safePdfText(sectionTitle),{x:40,y:742,size:18,font:ctx.bold,color:rgb(...PDF_THEME.text)});ctx.y=719;if(sectionSub){const lines=wrapPdf(ctx.font,sectionSub,9.2,515);lines.forEach(line=>{p.drawText(line,{x:40,y:ctx.y,size:9.2,font:ctx.font,color:rgb(...PDF_THEME.muted)});ctx.y-=13});ctx.y-=4}}
+    return p;
+  }
+  function needSpace(ctx,h,title='Continued'){if(ctx.y-h<64)addReportPage(ctx,title,'Continued from the previous page.')}
+  function drawRule(ctx){const {rgb}=window.PDFLib;ctx.page.drawLine({start:{x:40,y:ctx.y},end:{x:555,y:ctx.y},thickness:.7,color:rgb(...PDF_THEME.line)});ctx.y-=12}
+  function drawSectionTitle(ctx,title,sub=''){const {rgb}=window.PDFLib;needSpace(ctx,46,title);ctx.page.drawRectangle({x:40,y:ctx.y-20,width:4,height:22,color:rgb(...PDF_THEME.blue)});ctx.page.drawText(safePdfText(title),{x:53,y:ctx.y-12,size:12,font:ctx.bold,color:rgb(...PDF_THEME.text)});ctx.y-=29;if(sub){ctx.page.drawText(safePdfText(sub),{x:53,y:ctx.y,size:8.7,font:ctx.font,color:rgb(...PDF_THEME.muted)});ctx.y-=18}}
+  function drawInfoGrid(ctx,items){const {rgb}=window.PDFLib,cols=2,gap=10,w=(515-gap)/2,rowH=48;for(let i=0;i<items.length;i+=2){needSpace(ctx,rowH+8,'Record details');[0,1].forEach(j=>{const item=items[i+j];if(!item)return;const x=40+j*(w+gap),y=ctx.y-rowH;ctx.page.drawRectangle({x,y,width:w,height:rowH,color:rgb(...PDF_THEME.surface),borderColor:rgb(...PDF_THEME.line),borderWidth:.7});ctx.page.drawText(safePdfText(item[0]).toUpperCase(),{x:x+11,y:y+29,size:7.4,font:ctx.bold,color:rgb(...PDF_THEME.muted)});const val=wrapPdf(ctx.bold,item[1]||'—',10.2,w-22).slice(0,2);val.forEach((line,k)=>ctx.page.drawText(line,{x:x+11,y:y+13-k*12,size:10.2,font:ctx.bold,color:rgb(...PDF_THEME.text)}))});ctx.y-=rowH+9}ctx.y-=3}
+  function statusColor(v){const s=String(v||'').toLowerCase();if(s.includes('expired')||s.includes('missing')||s.includes('breach'))return PDF_THEME.red;if(s.includes('critical')||s.includes('due')||s.includes('await'))return PDF_THEME.amber;if(s.includes('valid')||s.includes('healthy')||s.includes('active')||s.includes('available')||s.includes('validated'))return PDF_THEME.green;return PDF_THEME.blue}
+  function drawStatusPill(ctx,text,x,y){const {rgb}=window.PDFLib,label=safePdfText(text||'—'),w=Math.max(42,ctx.bold.widthOfTextAtSize(label,7.5)+16),c=statusColor(label);ctx.page.drawRectangle({x,y:y-3,width:w,height:17,color:rgb(c[0]+(1-c[0])*.88,c[1]+(1-c[1])*.88,c[2]+(1-c[2])*.88),borderRadius:7});ctx.page.drawText(label,{x:x+8,y:y+2,size:7.5,font:ctx.bold,color:rgb(...c)});return w}
+  function drawTable(ctx,columns,rows,titleForContinuation='Table continued'){
+    const {rgb}=window.PDFLib,tableX=40,totalW=515,headerH=25,size=8.2,pad=7;
+    const drawHeader=()=>{needSpace(ctx,headerH+28,titleForContinuation);let x=tableX;ctx.page.drawRectangle({x:tableX,y:ctx.y-headerH,width:totalW,height:headerH,color:rgb(.94,.955,.978)});columns.forEach(c=>{ctx.page.drawText(safePdfText(c.label).toUpperCase(),{x:x+pad,y:ctx.y-16,size:7.1,font:ctx.bold,color:rgb(...PDF_THEME.muted)});x+=c.width});ctx.y-=headerH};
+    drawHeader();
+    if(!rows.length){ctx.page.drawRectangle({x:tableX,y:ctx.y-34,width:totalW,height:34,color:rgb(.988,.99,.994),borderColor:rgb(...PDF_THEME.line),borderWidth:.6});ctx.page.drawText('No records available.',{x:tableX+10,y:ctx.y-21,size:8.7,font:ctx.font,color:rgb(...PDF_THEME.muted)});ctx.y-=40;return}
+    rows.forEach(row=>{const wrapped=columns.map(c=>wrapPdf(ctx.font,row[c.key]??'—',size,c.width-pad*2)),lineCount=Math.max(1,...wrapped.map(x=>x.length)),rowH=Math.max(29,lineCount*10.5+13);if(ctx.y-rowH<62){addReportPage(ctx,titleForContinuation,'');drawHeader()}let x=tableX;ctx.page.drawRectangle({x:tableX,y:ctx.y-rowH,width:totalW,height:rowH,color:rgb(1,1,1),borderColor:rgb(...PDF_THEME.line),borderWidth:.45});columns.forEach((c,ci)=>{wrapped[ci].slice(0,5).forEach((line,li)=>ctx.page.drawText(line,{x:x+pad,y:ctx.y-16-li*10.2,size,font:ctx.font,color:rgb(...PDF_THEME.text)}));x+=c.width});ctx.y-=rowH});ctx.y-=8
+  }
+  function addCover(ctx,title,subtitle,meta){const {rgb}=window.PDFLib,p=ctx.doc.addPage([595.28,841.89]);ctx.page=p;p.drawRectangle({x:0,y:0,width:595.28,height:841.89,color:rgb(...PDF_THEME.surface)});p.drawRectangle({x:0,y:622,width:595.28,height:220,color:rgb(...PDF_THEME.navy)});p.drawRectangle({x:42,y:745,width:48,height:48,color:rgb(...PDF_THEME.blue),borderRadius:9});p.drawText('YL',{x:55,y:762,size:18,font:ctx.bold,color:rgb(1,1,1)});p.drawText('YARD LINE OPERATIONS',{x:104,y:770,size:15,font:ctx.bold,color:rgb(1,1,1)});p.drawText('Workforce | Fleet | Compliance',{x:104,y:750,size:9.5,font:ctx.font,color:rgb(.73,.79,.88)});p.drawText(safePdfText(title),{x:42,y:676,size:28,font:ctx.bold,color:rgb(1,1,1)});const sub=wrapPdf(ctx.font,subtitle,11.5,505);sub.forEach((line,i)=>p.drawText(line,{x:42,y:650-i*16,size:11.5,font:ctx.font,color:rgb(.84,.88,.94)}));let y=560;Object.entries(meta).forEach(([k,v])=>{p.drawText(safePdfText(k).toUpperCase(),{x:44,y,size:8,font:ctx.bold,color:rgb(...PDF_THEME.muted)});p.drawText(safePdfText(v),{x:210,y,size:10.2,font:ctx.bold,color:rgb(...PDF_THEME.text)});p.drawLine({start:{x:44,y:y-9},end:{x:550,y:y-9},thickness:.5,color:rgb(...PDF_THEME.line)});y-=43});p.drawText('Operational record generated from Yard Line Operations.',{x:44,y:118,size:9,font:ctx.font,color:rgb(...PDF_THEME.muted)});p.drawText('Review source documents where compliance decisions depend on scanned originals.',{x:44,y:101,size:9,font:ctx.font,color:rgb(...PDF_THEME.muted)})}
+  function finalizePdf(ctx){const {rgb}=window.PDFLib,pages=ctx.doc.getPages(),n=pages.length;pages.forEach((p,i)=>{p.drawLine({start:{x:40,y:43},end:{x:555,y:43},thickness:.45,color:rgb(...PDF_THEME.line)});p.drawText('Yard Line Operations | Internal operational record',{x:40,y:27,size:7.4,font:ctx.font,color:rgb(...PDF_THEME.muted)});const txt=`Page ${i+1} of ${n}`;p.drawText(txt,{x:555-ctx.font.widthOfTextAtSize(txt,7.4),y:27,size:7.4,font:ctx.font,color:rgb(...PDF_THEME.muted)})})}
+  function downloadPdf(bytes,name){const blob=new Blob([bytes],{type:'application/pdf'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1200)}
+  const stamp=()=>new Date().toISOString().slice(0,10).replaceAll('-','');
+  function activeEmployeeAssignments(e){return activeAssignments().filter(a=>String(a.employeeId)===String(e.id))}function vehicleAssignments(v){return activeAssignments().filter(a=>String(a.vehicle||'')===String(v.reg||''))}
+  async function buildOverviewPdf(type,records){const {PDFDocument}=await ensurePremiumPdf(),doc=await PDFDocument.create(),ctx=await makePdfContext(doc,type==='employee'?'Employee Operational Overview':'Vehicle Operational Overview');if(records.length>1)addCover(ctx,ctx.reportTitle,'Consolidated record overview with master data, allocations, compliance and document status.',{'Generated':new Date().toLocaleString(),'Selected records':records.length,'Report scope':type==='employee'?'Employees + allocations + certification':'Vehicles + allocations + documents','Status':'System generated'});
+    for(const r of records){if(type==='employee'){
+      addReportPage(ctx,`${r.name} | File # ${r.id}`,`${r.role||'—'} | ${r.customer||'No customer'} | ${r.employmentStatus||'—'}`);drawInfoGrid(ctx,[['File number',r.id],['Phone',r.phone||'Not recorded'],['Designation',r.role||'—'],['Joining date',fmt(r.joining)],['Employment status',r.employmentStatus||'—'],['Deployment status',r.status||'—'],['Current customer',r.customer||'—'],['Overall training risk',employeeRisk(r)]]);
+      drawSectionTitle(ctx,'Active allocations','Current linked deployments and assigned resources.');drawTable(ctx,[{key:'customer',label:'Customer',width:110},{key:'type',label:'Allocation',width:100},{key:'site',label:'Site',width:110},{key:'period',label:'Period',width:110},{key:'vehicle',label:'Vehicle',width:85}],activeEmployeeAssignments(r).map(a=>({customer:a.customer,type:a.type,site:a.site||'—',period:`${fmt(a.start)} - ${fmt(a.end)}`,vehicle:a.vehicle||'—'})),'Allocations continued');
+      drawSectionTitle(ctx,'Certificates & training',`${(r.certificates||[]).length} recorded certificate${(r.certificates||[]).length===1?'':'s'} | ${missingRequiredTypes(r).length} required missing.`);drawTable(ctx,[{key:'type',label:'Certificate',width:125},{key:'issue',label:'Issue',width:80},{key:'expiry',label:'Expiry',width:88},{key:'status',label:'Status',width:82},{key:'document',label:'Document',width:140}],(r.certificates||[]).map(c=>({type:c.type,issue:fmt(c.issue),expiry:fmt(c.expiry),status:trainingRecordRisk(c),document:c.fileName||'Not attached'})),'Certificates continued');
+      const missing=missingRequiredTypes(r);if(missing.length){drawSectionTitle(ctx,'Required certificates not recorded');drawTable(ctx,[{key:'type',label:'Requirement',width:180},{key:'scope',label:'Requirement scope',width:335}],missing.map(t=>({type:t.name,scope:requirementScopeText(t).detail})),'Missing requirements continued')}
+      const passes=employeeGatePasses(r);drawSectionTitle(ctx,'Customer gate passes');drawTable(ctx,[{key:'customer',label:'Customer / site',width:150},{key:'status',label:'Validation',width:100},{key:'expiry',label:'Expiry',width:100},{key:'risk',label:'Risk',width:85},{key:'document',label:'Document',width:80}],passes.map(g=>({customer:g.customer||'—',status:g.status||'Not Uploaded',expiry:fmt(g.expiry),risk:gatePassRisk(g),document:g.fileName||'—'})),'Gate passes continued');
+      const hist=state.renewals.filter(x=>String(x.employeeId)===String(r.id)).sort((a,b)=>d(b.renewedOn)-d(a.renewedOn));drawSectionTitle(ctx,'Renewal audit history');drawTable(ctx,[{key:'date',label:'Renewed',width:80},{key:'type',label:'Certificate',width:115},{key:'from',label:'Previous',width:90},{key:'to',label:'New expiry',width:90},{key:'by',label:'Updated by',width:140}],hist.map(x=>({date:fmt(x.renewedOn),type:x.certType,from:fmt(x.previousExpiry),to:fmt(x.newExpiry),by:x.renewedBy||'—'})),'Renewal history continued');
+    }else{
+      addReportPage(ctx,`${r.reg} | ${r.make} ${r.model}`,`${r.id} | ${r.type||'—'} | ${r.status||'—'}`);drawInfoGrid(ctx,[['Asset ID',r.id],['Registration',r.reg],['Make / Model',`${r.make||'—'} ${r.model||''}`.trim()],['Vehicle type',r.type||'—'],['Year',String(r.year||'—')],['Status',r.status||'—'],['Current customer',r.customer||'—'],['Photo count',String((r.images||[]).length)]]);
+      drawSectionTitle(ctx,'Active allocations','Current assignment, employee linkage and operating site.');drawTable(ctx,[{key:'customer',label:'Customer',width:105},{key:'type',label:'Allocation',width:95},{key:'employee',label:'Employee',width:130},{key:'site',label:'Site',width:100},{key:'period',label:'Period',width:85}],vehicleAssignments(r).map(a=>({customer:a.customer,type:a.type,employee:a.employee||'—',site:a.site||'—',period:`${fmt(a.start)} - ${fmt(a.end)}`})),'Allocations continued');
+      drawSectionTitle(ctx,'Vehicle documents');drawTable(ctx,[{key:'name',label:'Document',width:155},{key:'expiry',label:'Expiry',width:110},{key:'risk',label:'Status',width:105},{key:'file',label:'Attachment',width:145}],(r.documents||[]).map(x=>({name:x.name,expiry:fmt(x.expiry),risk:riskFor(x.expiry,x.fileName),file:x.fileName||'Not attached'})),'Vehicle documents continued');
+    }}finalizePdf(ctx);return doc.save()}
+  function attachmentUrlV26(record){return record?.fileUrl||sessionFiles?.[record?.id]||''}
+  async function appendAttachmentV26(ctx,record,label,owner){const url=attachmentUrlV26(record);if(!url)return false;try{const res=await fetch(url),buf=await res.arrayBuffer(),type=(res.headers.get('content-type')||'').toLowerCase(),name=String(record.fileName||'').toLowerCase();if(type.includes('pdf')||name.endsWith('.pdf')){const src=await window.PDFLib.PDFDocument.load(buf),pages=await ctx.doc.copyPages(src,src.getPageIndices());pages.forEach(p=>ctx.doc.addPage(p));return true}const isPng=type.includes('png')||name.endsWith('.png'),isJpg=type.includes('jpeg')||type.includes('jpg')||/\.jpe?g$/.test(name);if(isPng||isJpg){const img=isPng?await ctx.doc.embedPng(buf):await ctx.doc.embedJpg(buf);addReportPage(ctx,label,owner);const maxW=500,maxH=610,s=Math.min(maxW/img.width,maxH/img.height,1),w=img.width*s,h=img.height*s;ctx.page.drawImage(img,{x:(595.28-w)/2,y:88+(610-h)/2,width:w,height:h});return true}}catch(err){console.warn('Attachment merge failed',label,err)}return false}
+  async function buildPackPdf(type,records){const {PDFDocument}=await ensurePremiumPdf(),doc=await PDFDocument.create(),ctx=await makePdfContext(doc,type==='employee'?'Employee Certificate Pack':'Vehicle Document Pack');addCover(ctx,ctx.reportTitle,type==='employee'?'Consolidated employee certificate register and available source documents.':'Consolidated vehicle document register and available source documents.',{'Generated':new Date().toLocaleString(),'Selected records':records.length,'Package type':type==='employee'?'Employee certificates':'Vehicle documents','Attachment policy':'Available browser-session files are merged'});const attachments=[];
+    for(const r of records){addReportPage(ctx,type==='employee'?`${r.name} | File # ${r.id}`:`${r.reg} | ${r.make} ${r.model}`,type==='employee'?`${r.role||'—'} | ${r.customer||'No customer'}`:`${r.id} | ${r.customer||'Unassigned'}`);if(type==='employee'){
+      drawInfoGrid(ctx,[['Employee file',r.id],['Designation',r.role||'—'],['Customer',r.customer||'—'],['Employment',r.employmentStatus||'—']]);drawSectionTitle(ctx,'Certificate manifest','The register below is included even when an original scanned file is not available in this browser session.');const rows=(r.certificates||[]).map(c=>{attachments.push({record:c,label:c.type,owner:`${r.id} | ${r.name}`});return{type:c.type,issue:fmt(c.issue),expiry:fmt(c.expiry),status:trainingRecordRisk(c),file:c.fileName||'Metadata only'}});drawTable(ctx,[{key:'type',label:'Certificate',width:135},{key:'issue',label:'Issue',width:80},{key:'expiry',label:'Expiry',width:85},{key:'status',label:'Status',width:85},{key:'file',label:'Source document',width:130}],rows,'Certificate manifest continued');
+    }else{drawInfoGrid(ctx,[['Asset ID',r.id],['Registration',r.reg],['Vehicle',`${r.make||'—'} ${r.model||''}`.trim()],['Customer',r.customer||'—']]);drawSectionTitle(ctx,'Document manifest','Available source files are appended after all manifests.');const rows=(r.documents||[]).map(x=>{attachments.push({record:x,label:x.name,owner:`${r.reg} | ${r.make} ${r.model}`});return{name:x.name,expiry:fmt(x.expiry),status:riskFor(x.expiry,x.fileName),file:x.fileName||'Metadata only'}});drawTable(ctx,[{key:'name',label:'Document',width:175},{key:'expiry',label:'Expiry',width:105},{key:'status',label:'Status',width:105},{key:'file',label:'Source document',width:130}],rows,'Document manifest continued')}}
+    let merged=0;for(const a of attachments)if(await appendAttachmentV26(ctx,a.record,a.label,a.owner))merged++;
+    if(attachments.length&&!merged){addReportPage(ctx,'Source document availability','No original source files were available in the current browser session.');drawInfoGrid(ctx,[['Manifest records',String(attachments.length)],['Merged originals','0'],['Reason','Metadata may persist after the browser no longer retains uploaded binary files.'],['Next step','Open the original record and re-upload the source file if a merged pack is required.']])}
+    finalizePdf(ctx);return{bytes:await doc.save(),merged,total:attachments.length}}
+  window.v24DownloadOverview=async(type,ids=null)=>{const set=ids?new Set(ids.map(String)):(type==='employee'?window.__yardlineSelections?.employee:window.__yardlineSelections?.vehicle)||new Set(),records=(type==='employee'?state.employees:state.vehicles).filter(x=>set.has(String(x.id)));if(!records.length)return notify('Select records','Choose at least one record first.');try{const bytes=await buildOverviewPdf(type,records);downloadPdf(bytes,`YardLine_${type==='employee'?'Employee':'Vehicle'}_Overview_${stamp()}.pdf`);notify('Premium PDF ready',`${records.length} ${type}${records.length===1?'':'s'} exported with structured master data, allocations and compliance sections.`)}catch(err){console.error(err);notify('PDF export failed','The PDF library could not complete the export. Please retry with an internet connection.') }};
+  window.v24DownloadPack=async(type,ids=null)=>{const set=ids?new Set(ids.map(String)):(type==='employee'?window.__yardlineSelections?.employee:window.__yardlineSelections?.vehicle)||new Set(),records=(type==='employee'?state.employees:state.vehicles).filter(x=>set.has(String(x.id)));if(!records.length)return notify('Select records','Choose at least one record first.');try{const out=await buildPackPdf(type,records);downloadPdf(out.bytes,`YardLine_${type==='employee'?'Certificate':'Vehicle_Document'}_Pack_${stamp()}.pdf`);notify('Premium document pack ready',`${out.total} document record${out.total===1?'':'s'} indexed; ${out.merged} original source file${out.merged===1?'':'s'} merged into the PDF.`)}catch(err){console.error(err);notify('PDF export failed','The document pack could not be generated. Please retry with an internet connection.') }};
+
+  // Re-render enhanced surfaces after overrides are installed.
+  renderEmployeeEditCertificates(null);renderCompliance();
+  console.info(V26_MARKER);
 })();
 </script>
 
