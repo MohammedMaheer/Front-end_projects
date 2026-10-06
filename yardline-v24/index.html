@@ -3803,5 +3803,204 @@ renderAll();updateAssignmentFields();
 }
 </style>
 
+
+<!-- Yard Line v28.2 - post-audit responsive and usability polish -->
+<style id="yardline-v28-2-audit-polish">
+/* Dashboard: prevent link/eyebrow collision in the compact workforce card. */
+.dashboard-lower-overview .workforce-panel .panel-header{
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:5px!important;
+}
+.dashboard-lower-overview .workforce-panel .panel-header .text-button{
+  margin-top:0!important;
+  align-self:flex-start!important;
+}
+.dashboard-lower-overview .workforce-panel .panel-header h3,
+.dashboard-lower-overview .workforce-panel .panel-header .eyebrow{
+  white-space:normal!important;
+}
+
+/* Let longer customer/activity labels breathe rather than clipping useful context. */
+.customer-allocation-panel .util-row strong,
+.activity-panel .activity-row strong,
+.activity-panel .activity-row div>span{
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+.activity-panel .activity-row>div{min-width:0!important}
+
+/* Balanced KPI grids. */
+.training-kpi-grid{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+.risk-strip{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+.risk-card{min-width:0!important}
+.risk-card>div:last-child{min-width:0!important}
+.risk-card span{white-space:normal!important;line-height:1.25!important}
+
+@media(max-width:1450px){
+  .training-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .risk-strip{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:900px){
+  .training-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .risk-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .topbar p{display:none!important}
+  .topbar-left{min-width:0!important}
+  .topbar-right{flex:0 0 auto!important}
+}
+
+/* Keep the action column reachable at laptop widths while the data columns can still scroll. */
+@media(min-width:901px){
+  .employee-table th:last-child,.employee-table td:last-child,
+  .vehicle-table th:last-child,.vehicle-table td:last-child,
+  .certificate-table th:last-child,.certificate-table td:last-child,
+  .compliance-table th:last-child,.compliance-table td:last-child,
+  .renewal-table th:last-child,.renewal-table td:last-child{
+    position:sticky!important;
+    right:0!important;
+    z-index:6!important;
+    background:#fff!important;
+    box-shadow:-12px 0 18px -18px rgba(15,23,42,.55)!important;
+  }
+  .employee-table thead th:last-child,
+  .vehicle-table thead th:last-child,
+  .certificate-table thead th:last-child,
+  .compliance-table thead th:last-child,
+  .renewal-table thead th:last-child{
+    z-index:9!important;
+    background:#f8fafc!important;
+  }
+  .employee-table th:last-child,.employee-table td:last-child,
+  .vehicle-table th:last-child,.vehicle-table td:last-child{min-width:154px!important;width:154px!important}
+  .certificate-table th:last-child,.certificate-table td:last-child{min-width:178px!important;width:178px!important}
+  .compliance-table th:last-child,.compliance-table td:last-child{min-width:184px!important;width:184px!important}
+  .renewal-table th:last-child,.renewal-table td:last-child{min-width:122px!important;width:122px!important}
+
+  .employee-table td:last-child .row-action-group,
+  .vehicle-table td:last-child .row-action-group{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+    width:100%!important;
+  }
+  .employee-table td:last-child .v28-row-downloads,
+  .vehicle-table td:last-child .v28-row-downloads{display:contents!important}
+  .employee-table td:last-child .row-action,
+  .vehicle-table td:last-child .row-action{
+    width:100%!important;
+    min-width:0!important;
+    justify-content:center!important;
+    padding-left:7px!important;
+    padding-right:7px!important;
+  }
+
+  .certificate-table td:last-child .certificate-action-stack{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:6px!important;
+    width:100%!important;
+  }
+  .certificate-table td:last-child .certificate-action-stack .primary-row{
+    grid-column:1/-1!important;
+  }
+  .certificate-table td:last-child .row-action,
+  .compliance-table td:last-child .row-action{
+    width:100%!important;
+    min-width:0!important;
+    justify-content:center!important;
+    padding-left:7px!important;
+    padding-right:7px!important;
+  }
+  .compliance-table td:last-child .action-stack{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:6px!important;
+    width:100%!important;
+  }
+}
+
+/* Renewal date headers were visually running together. */
+.renewal-table{min-width:1135px!important;width:1135px!important}
+.renewal-table th:nth-child(4),.renewal-table th:nth-child(5){
+  width:136px!important;
+  white-space:normal!important;
+  line-height:1.2!important;
+}
+.renewal-table td:nth-child(4),.renewal-table td:nth-child(5){
+  width:136px!important;
+  white-space:nowrap!important;
+}
+
+/* Employee inline certificate builder copy needs visible separation. */
+.v28-existing-cert-head>div,
+.v28-draft-head>div{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+}
+.v28-existing-cert-head span,
+.v28-draft-head span{
+  display:inline-block!important;
+  margin:0!important;
+}
+
+/* More forgiving hit targets without adding visual bulk. */
+.master-row-check,.master-select-head{min-height:32px!important}
+.master-row-check input,.master-select-all,
+.training-action-toggle input,#proposalSelectAll,.proposal-row-check{
+  width:18px!important;
+  height:18px!important;
+  min-width:18px!important;
+  min-height:18px!important;
+}
+.doc-link{
+  min-height:32px!important;
+  padding-top:5px!important;
+  padding-bottom:5px!important;
+}
+
+/* Keep communication nav discoverable on short laptop screens. */
+@media(max-height:820px){
+  .sidebar{overflow-y:auto!important;overscroll-behavior:contain!important}
+  .sidebar-footer{
+    position:static!important;
+    margin-top:12px!important;
+    padding-top:10px!important;
+    background:transparent!important;
+  }
+}
+
+/* Standard mobile modal close button belongs in the top-right corner. */
+@media(max-width:700px){
+  .modal-header:not(.profile-modal-header){
+    position:relative!important;
+    flex-direction:row!important;
+    align-items:flex-start!important;
+    padding-right:48px!important;
+  }
+  .modal-header:not(.profile-modal-header)>div{
+    min-width:0!important;
+    flex:1 1 auto!important;
+  }
+  .modal-header:not(.profile-modal-header)>.close-modal{
+    position:absolute!important;
+    right:0!important;
+    top:0!important;
+    margin:0!important;
+  }
+  .compliance-workspace-tabs{
+    overflow-x:auto!important;
+    flex-wrap:nowrap!important;
+    scroll-snap-type:x proximity!important;
+  }
+  .compliance-workspace-tabs button{
+    flex:0 0 auto!important;
+    scroll-snap-align:start!important;
+  }
+}
+</style>
+
 </body>
 </html>
