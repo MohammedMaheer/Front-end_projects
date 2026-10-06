@@ -3566,9 +3566,14 @@ renderAll();updateAssignmentFields();
   }
   function enhanceMasterRowDownloads(type){
     const table=document.querySelector(type==='employee'?'.employee-table':'.vehicle-table');if(!table)return;
-    [...table.querySelectorAll('tbody tr')].forEach(tr=>{const id=tr.dataset.masterId,cell=tr.lastElementChild;if(!id||!cell||cell.querySelector('.v28-row-downloads'))return;const g=cell.querySelector('.row-action-group')||cell;const wrap=document.createElement('span');wrap.className='v28-row-downloads';wrap.innerHTML='<button type="button" class="row-action" onclick="v24DownloadOverview(\''+type+'\',[\\''+String(id).replace(/'/g,"\\'")+'\\'])">PDF</button><button type="button" class="row-action" onclick="v28DownloadRecordFiles(\''+type+'\',\\''+String(id).replace(/'/g,"\\'")+'\\')">Files</button>';g.appendChild(wrap)});
+    [...table.querySelectorAll('tbody tr')].forEach(tr=>{
+      const id=tr.dataset.masterId,cell=tr.lastElementChild;if(!id||!cell||cell.querySelector('.v28-row-downloads'))return;
+      const g=cell.querySelector('.row-action-group')||cell,wrap=document.createElement('span');wrap.className='v28-row-downloads';
+      const pdf=document.createElement('button');pdf.type='button';pdf.className='row-action';pdf.textContent='PDF';pdf.addEventListener('click',()=>v24DownloadOverview(type,[String(id)]));
+      const files=document.createElement('button');files.type='button';files.className='row-action';files.textContent='Files';files.addEventListener('click',()=>v28DownloadRecordFiles(type,String(id)));
+      wrap.append(pdf,files);g.appendChild(wrap);
+    });
   }
-
   const baseRenderEmployeesV28=renderEmployees;renderEmployees=function(){baseRenderEmployeesV28();enhanceBulkFileButton('employee');enhanceMasterRowDownloads('employee')};
   const baseRenderVehiclesV28=renderVehicles;renderVehicles=function(){baseRenderVehiclesV28();enhanceBulkFileButton('vehicle');enhanceMasterRowDownloads('vehicle')};
 
