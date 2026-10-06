@@ -3684,5 +3684,124 @@ renderAll();updateAssignmentFields();
 })();
 </script>
 
+
+<!-- Yard Line v28.1 - circular chart breathing-room polish -->
+<style id="yardline-v28-1-donut-polish">
+/* Give circular KPI charts enough internal room for the larger readability typography. */
+.compliance-score-panel .donut-layout,
+.fleet-position-panel .donut-layout{
+  gap:20px!important;
+  min-height:158px!important;
+  padding:7px 4px 5px!important;
+}
+.compliance-score-panel .donut,
+.fleet-position-panel .donut{
+  width:134px!important;
+  height:134px!important;
+  flex:0 0 134px!important;
+}
+.compliance-score-panel .donut::after,
+.fleet-position-panel .donut::after{
+  width:94px!important;
+  height:94px!important;
+}
+.compliance-score-panel .donut-center,
+.fleet-position-panel .donut-center{
+  width:82px!important;
+  min-width:82px!important;
+  padding:4px!important;
+  text-align:center!important;
+  justify-content:center!important;
+}
+.compliance-score-panel .donut-center strong,
+.fleet-position-panel .donut-center strong{
+  font-size:28px!important;
+  line-height:1.05!important;
+  letter-spacing:-.55px!important;
+  white-space:nowrap!important;
+}
+.compliance-score-panel .donut-center span,
+.fleet-position-panel .donut-center span{
+  margin-top:6px!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+  max-width:78px!important;
+  white-space:normal!important;
+  text-align:center!important;
+}
+.compliance-score-panel .legend,
+.fleet-position-panel .legend{
+  min-width:148px!important;
+  max-width:184px!important;
+  gap:8px!important;
+}
+.compliance-score-panel .legend-item,
+.fleet-position-panel .legend-item{
+  padding:7px 3px 1px!important;
+}
+.compliance-score-panel .legend-item strong,
+.fleet-position-panel .legend-item strong{
+  font-size:15.5px!important;
+  line-height:1.15!important;
+}
+.compliance-score-panel .legend-item span,
+.fleet-position-panel .legend-item span{
+  font-size:13.5px!important;
+  line-height:1.3!important;
+  margin-top:3px!important;
+}
+
+/* Laptop widths: preserve breathing room by stacking circle and legend instead of shrinking the hole. */
+@media(max-width:1180px){
+  .compliance-score-panel .donut-layout,
+  .fleet-position-panel .donut-layout{
+    flex-direction:column!important;
+    gap:15px!important;
+    min-height:0!important;
+  }
+  .compliance-score-panel .legend,
+  .fleet-position-panel .legend{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    gap:8px!important;
+  }
+  .compliance-score-panel .legend-item,
+  .fleet-position-panel .legend-item{
+    text-align:center!important;
+  }
+}
+
+/* Mobile: keep the inner opening comfortably larger than the text block. */
+@media(max-width:680px){
+  .compliance-score-panel .donut,
+  .fleet-position-panel .donut{
+    width:122px!important;
+    height:122px!important;
+    flex-basis:122px!important;
+  }
+  .compliance-score-panel .donut::after,
+  .fleet-position-panel .donut::after{
+    width:88px!important;
+    height:88px!important;
+  }
+  .compliance-score-panel .donut-center,
+  .fleet-position-panel .donut-center{
+    width:76px!important;
+    min-width:76px!important;
+  }
+  .compliance-score-panel .donut-center strong,
+  .fleet-position-panel .donut-center strong{
+    font-size:25px!important;
+  }
+  .compliance-score-panel .donut-center span,
+  .fleet-position-panel .donut-center span{
+    font-size:12.5px!important;
+    max-width:72px!important;
+  }
+}
+</style>
+
 </body>
 </html>
