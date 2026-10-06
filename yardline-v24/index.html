@@ -3422,6 +3422,7 @@ renderAll();updateAssignmentFields();
 .v28-draft-remove{min-height:39px}
 .v28-inline-note{padding:10px 12px;border-radius:9px;background:#f5f8ff;border:1px solid #dce6fb;color:#526176;font-size:12.5px;line-height:1.45}
 .v28-download-file{white-space:nowrap}
+.vehicle-doc-row{grid-template-columns:minmax(130px,1fr) 120px 100px auto auto!important}
 .v28-proposal-upload{padding:16px 17px;margin-bottom:12px}
 .v28-proposal-grid{display:grid;grid-template-columns:1.25fr .8fr 1fr .8fr;gap:10px;align-items:end}
 .v28-proposal-grid label{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -3438,6 +3439,7 @@ renderAll();updateAssignmentFields();
 .v28-bulk-download{white-space:nowrap}
 @media(max-width:1250px){.v28-draft-cert-row{grid-template-columns:1fr 1fr}.v28-draft-cert-row .v28-draft-file-wrap{grid-column:1/-1}.v28-draft-remove{justify-self:start}.v28-proposal-grid{grid-template-columns:1fr 1fr}.v28-proposal-grid .proposal-notes,.v28-proposal-grid .proposal-files,.v28-proposal-grid .proposal-submit,.v28-proposal-help{grid-column:auto}}
 @media(max-width:760px){.v28-draft-cert-row,.v28-proposal-grid{grid-template-columns:1fr}.v28-draft-cert-row .v28-draft-file-wrap,.v28-proposal-grid .proposal-notes,.v28-proposal-grid .proposal-files,.v28-proposal-grid .proposal-submit,.v28-proposal-help{grid-column:1}.v28-proposal-grid .proposal-submit{justify-self:stretch}.v28-row-downloads{justify-content:flex-start}}
+@media(max-width:820px){.vehicle-doc-row{grid-template-columns:1fr 1fr!important}.vehicle-doc-row .row-action{justify-self:start}}
 </style>
 <script>
 (function(){
@@ -3590,6 +3592,7 @@ renderAll();updateAssignmentFields();
   }
   const baseOpenVehicleV28=window.openVehicle;window.openVehicle=id=>{baseOpenVehicleV28(id);enhanceVehicleDocDownloads(id)};
 
+  const baseRenderCustomersV28=renderCustomers;renderCustomers=function(){baseRenderCustomersV28();renderProposalCustomerOptions()};
   const baseRenderComplianceV28=renderCompliance;renderCompliance=function(){baseRenderComplianceV28();document.querySelectorAll('#complianceTableBody tr').forEach(tr=>{const review=[...tr.querySelectorAll('button')].find(b=>/openComplianceRecord/.test(b.getAttribute('onclick')||''));if(!review)return;const m=(review.getAttribute('onclick')||'').match(/openComplianceRecord\('([^']+)'\)/);if(!m)return;const r=complianceRows().find(x=>String(x.id)===String(m[1]));if(!r?.fileName)return;const stack=review.closest('.action-stack')||review.parentElement;if(stack&&!stack.querySelector('.v28-compliance-download'))stack.insertAdjacentHTML('beforeend','<button class="row-action v28-compliance-download" onclick="v28DownloadAttachment(\''+esc(r.id)+'\',\''+esc(r.fileName)+'\')">Download</button>')})};
 
   function addCertificateModalDownload(){
@@ -3663,6 +3666,14 @@ renderAll();updateAssignmentFields();
   window.deleteInternalProposal=async function(id){const p=state.internalProposals.find(x=>x.id===id);if(!p)return;if(!confirm('Delete '+p.fileName+' from Internal Proposals?'))return;state.internalProposals=state.internalProposals.filter(x=>x.id!==id);proposalSelection.delete(id);await forgetFile(id);saveState();renderInternalProposals();notify('Proposal deleted',p.fileName+' was removed.')};
   async function downloadSelectedProposals(){const list=state.internalProposals.filter(x=>proposalSelection.has(x.id));if(!list.length)return notify('Select proposals','Choose at least one proposal file first.');let done=0,missing=0;for(const p of list){const url=await getStoredFileUrl(p.id);if(!url){missing++;continue}try{const res=await fetch(url),blob=await res.blob();downloadBlob(blob,p.fileName);done++;await new Promise(r=>setTimeout(r,120))}catch{missing++}}notify('Proposal multi-download',done+' file'+(done===1?'':'s')+' downloaded'+(missing?'; '+missing+' unavailable in this browser.':'.'))}
 
+  window.v28PrepareNewEmployeeCertificates=function(){
+    employeeDraftContext='__new__-'+Date.now();
+    resetEmployeeDraftCertificates(true);
+    const count=document.getElementById('v28ExistingCertCount');if(count)count.textContent='No saved certificates yet';
+    const list=document.getElementById('employeeEditCertificateList');if(list)list.innerHTML='<div class="employee-certificate-empty">No saved certificate records yet. Use + Add Certificate or + Add Multiple Files below.</div>';
+  };
+  document.querySelectorAll('[data-open-modal="employeeModal"]').forEach(btn=>btn.addEventListener('click',()=>setTimeout(()=>{if(!document.getElementById('employeeForm')?.dataset.editId)window.v28PrepareNewEmployeeCertificates()},0)));
+  const baseNavigateV28=navigate;navigate=function(page){baseNavigateV28(page);if(page==='proposals'){renderProposalCustomerOptions();renderInternalProposals()}};
   setupEmployeeCertificateBuilder();
   addCertificateModalDownload();
   setupInternalProposals();
