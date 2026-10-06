@@ -3803,5 +3803,53 @@ renderAll();updateAssignmentFields();
 }
 </style>
 
+
+<!-- Yard Line v28.2 - full UI audit polish -->
+<style id="yardline-v28-2-audit-polish">
+/* Master tables: give row actions breathing room instead of compressing five buttons. */
+.employee-table th:last-child,.employee-table td:last-child,
+.vehicle-table th:last-child,.vehicle-table td:last-child{min-width:230px!important}
+.employee-table .row-action-group,.vehicle-table .row-action-group{display:flex!important;gap:6px!important;flex-wrap:wrap!important;align-items:center!important}
+.employee-table .row-action,.vehicle-table .row-action{padding:5px 9px!important;min-height:31px!important;font-size:13px!important}
+
+/* Dashboard narrow-card headers: keep heading and link readable without collision. */
+.workforce-panel .panel-header,.coverage-panel .panel-header{gap:10px!important;flex-wrap:wrap!important}
+.workforce-panel .panel-header .text-button,.coverage-panel .panel-header .text-button{font-size:14px!important;line-height:1.2!important;margin-left:auto!important}
+.workforce-panel .panel-header h3,.coverage-panel .panel-header h3{min-width:0!important}
+
+/* Employee profile allocation row: visibly separate customer name from allocation type. */
+.profile-section .allocation-row strong{margin-right:8px!important}
+.profile-section .allocation-row span{line-height:1.35!important}
+
+/* Vehicle profile: stronger hierarchy and balanced top grid. */
+.vehicle-top-grid{grid-template-columns:minmax(240px,280px) minmax(0,1fr)!important;gap:20px!important}
+.vehicle-detail-head{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:16px!important;flex-wrap:wrap!important}
+.vehicle-detail-head>div:first-child{min-width:180px!important;flex:1 1 220px!important}
+.vehicle-detail-head .record-actions,.vehicle-detail-head .row-action-group{margin-left:auto!important}
+.vehicle-detail-grid{gap:10px!important}
+.vehicle-gallery{min-height:200px!important}
+.vehicle-gallery>*{min-height:200px!important}
+
+/* Modal content must never disappear behind the sticky action footer. */
+.modal-form{padding-bottom:78px!important}
+.modal-card .form-actions{position:sticky!important;bottom:-18px!important;z-index:5!important;background:linear-gradient(180deg,rgba(255,255,255,.78),#fff 24%)!important;padding:16px 0 2px!important;margin-top:14px!important}
+
+/* Mobile dialog header: close button stays in the top-right instead of dropping below the title. */
+@media(max-width:680px){
+  .modal{padding:0!important;align-items:flex-end!important}
+  .modal-card{width:100vw!important;max-width:100vw!important;max-height:94dvh!important;border-radius:18px 18px 0 0!important;padding:18px 17px 16px!important}
+  .modal-header{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important;align-items:start!important}
+  .modal-header>div{min-width:0!important}
+  .modal-header .close-modal{grid-column:2!important;grid-row:1!important;align-self:start!important;margin:0!important}
+  .modal-form{padding-bottom:92px!important}
+  .modal-card .form-actions{bottom:-16px!important;padding:13px 0 0!important}
+  .vehicle-top-grid{grid-template-columns:1fr!important;gap:14px!important}
+  .vehicle-detail-head{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+  .vehicle-detail-head .record-actions,.vehicle-detail-head .row-action-group{margin-left:0!important;width:100%!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important}
+  .vehicle-detail-grid{grid-template-columns:1fr!important}
+  .employee-table th:last-child,.employee-table td:last-child,.vehicle-table th:last-child,.vehicle-table td:last-child{min-width:210px!important}
+}
+</style>
+
 </body>
 </html>
