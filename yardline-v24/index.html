@@ -2793,7 +2793,17 @@ window.viewVehicleAttachment=async(vehicleId,fileId)=>{const v=state.vehicles.fi
 window.openVehicle=(id)=>{const v=state.vehicles.find(x=>x.id===id);if(!v)return;const imgs=v.images||[],docs=v.documents||[];document.getElementById('recordModalTitle').textContent=v.reg;document.getElementById('recordModalContent').innerHTML=`<div class="vehicle-record-shell"><div class="vehicle-top-grid"><div class="vehicle-gallery">${imgs.length?imgs.slice(0,5).map(img=>sessionFiles[img.id]?`<button class="vehicle-photo" onclick="viewVehicleAttachment('${v.id}','${img.id}')"><img src="${sessionFiles[img.id]}" alt="${esc(v.reg)}" /></button>`:`<button class="vehicle-photo" onclick="viewVehicleAttachment('${v.id}','${img.id}')">${esc(img.fileName||'Photo')}</button>`).join(''):`<div class="vehicle-photo">${esc(v.make.slice(0,1)+v.model.slice(0,1))}</div>`}</div><div class="vehicle-detail-panel"><div class="vehicle-detail-head"><div><h4>${esc(v.make)} ${esc(v.model)}</h4><p>${esc(v.type)} · ${v.year} · Asset ${esc(v.id)}</p></div><div class="record-head-actions">${operationalBadge(v.status)}<button class="row-action primary-row" onclick="closeModal('recordModal');openVehicleEditor('${v.id}')">Edit vehicle</button></div></div><div class="vehicle-detail-grid"><div class="vehicle-detail-cell"><span>Registration</span><strong>${esc(v.reg)}</strong></div><div class="vehicle-detail-cell"><span>Customer</span><strong>${esc(v.customer||'—')}</strong></div><div class="vehicle-detail-cell"><span>Photos</span><strong>${imgs.length}</strong></div><div class="vehicle-detail-cell"><span>Documents</span><strong>${docs.length}</strong></div></div></div></div><div class="vehicle-full-section"><div class="profile-section-head"><div><h4>Vehicle documents</h4><span>Expiry and attachment status</span></div></div><div class="vehicle-doc-grid">${docs.map(doc=>`<div class="vehicle-doc-row"><div class="vehicle-doc-name"><strong>${esc(doc.name)}</strong><small>${doc.fileName?esc(doc.fileName):'No attachment'}</small></div><span>${fmt(doc.expiry)}</span>${badge(riskFor(doc.expiry,doc.fileName))}<button class="row-action" onclick="viewVehicleAttachment('${v.id}','${doc.id}')">${doc.fileName?'View':'Details'}</button></div>`).join('')||'<div class="empty-state compact-empty">No vehicle documents recorded.</div>'}</div></div></div>`;showModal('recordModal')};
 
 // Forms
-document.getElementById('employeeForm').addEventListener('submit',e=>{e.preventDefault();const editing=e.target.dataset.editId||'',id=document.getElementById('employeeId').value.trim(),existing=editing?employeeById(editing):null;if(!existing&&state.employees.some(x=>String(x.id).toLowerCase()===id.toLowerCase()))return notify('Duplicate file number','Employee File # must be unique.');const customer=document.getElementById('employeeCustomer').value||'-',payload={id:existing?.id||id,name:document.getElementById('employeeName').value.trim(),role:document.getElementById('employeeRole').value.trim(),phone:document.getElementById('employeePhone').value.replace(/\D/g,''),customer,employmentStatus:document.getElementById('employeeEmploymentStatus').value||'Active',status:document.getElementById('employeeStatus').value||'Available',joining:document.getElementById('employeeJoining').value};if(existing){Object.assign(existing,payload);state.assignments.forEach(a=>{if(String(a.employeeId)===String(existing.id))a.employee=payload.name});notify('Employee updated','Employee master details were updated.')}else{state.employees.unshift({...payload,gatePasses:[],certificates:[]});resetEmployeeListFilters();navigate('employees');notify('Employee saved','Employee file created and shown at the top of Employee Master.')}saveState();e.target.reset();e.target.dataset.editId='';renderEmployeeEditCertificates(null);closeModal(e.target);renderAll();if(existing)openEmployee(existing.id)});
+document.getElementById('employeeForm').addEventListener('submit',e=>{e.preventDefault();
+ const editing=e.target.dataset.editId||'',id=document.getElementById('employeeId').value.trim(),existing=editing?employeeById(editing):null;
+ if(!existing&&state.employees.some(x=>String(x.id).toLowerCase()===id.toLowerCase()))return notify('Duplicate file number','Employee File # must be unique.');
+ const draft=collectEmployeeDraftCertificates(existing);if(draft.error)return notify(draft.title||'Certificate details required',draft.error);
+ const customer=document.getElementById('employeeCustomer').value||'-',payload={id:existing?.id||id,name:document.getElementById('employeeName').value.trim(),role:document.getElementById('employeeRole').value.trim(),phone:document.getElementById('employeePhone').value.replace(/\D/g,''),customer,employmentStatus:document.getElementById('employeeEmploymentStatus').value||'Active',status:document.getElementById('employeeStatus').value||'Available',joining:document.getElementById('employeeJoining').value};
+ const created=draft.items.map(x=>{ensureFlexibleCertificateType(x.name);const c={id:uid('CERT'),type:x.name,issue:x.issue||'',expiry:x.expiry||'',baseExpiry:x.expiry||'',fileName:x.file?.name||'',validated:!!x.file,notes:''};return{record:c,file:x.file}});
+ if(existing){Object.assign(existing,payload);if(!Array.isArray(existing.certificates))existing.certificates=[];created.forEach(x=>existing.certificates.push(x.record));state.assignments.forEach(a=>{if(String(a.employeeId)===String(existing.id))a.employee=payload.name});notify('Employee updated',created.length?('Employee details and '+created.length+' new certificate'+(created.length===1?'':'s')+' were saved.'):'Employee master details were updated.')}
+ else{state.employees.unshift({...payload,gatePasses:[],certificates:created.map(x=>x.record)});resetEmployeeListFilters();navigate('employees');notify('Employee saved',created.length?('Employee file created with '+created.length+' certificate'+(created.length===1?'':'s')+'.'):'Employee file created and shown at the top of Employee Master.')}
+ created.forEach(x=>{if(x.file)rememberFile(x.record.id,x.file)});
+ saveState();e.target.reset();e.target.dataset.editId='';resetEmployeeDraftCertificates();renderEmployeeEditCertificates(null);closeModal(e.target);renderAll();if(existing)openEmployee(existing.id)
+});
 document.getElementById('employeeEditAddCertificate')?.addEventListener('click',()=>{
  const emp=employeeById(document.getElementById('employeeForm')?.dataset.editId||'');
  if(!emp)return notify('Save employee first','Create the employee record before adding certificates.');
@@ -3385,6 +3395,292 @@ renderAll();updateAssignmentFields();
   // Re-render enhanced surfaces after overrides are installed.
   renderEmployeeEditCertificates(null);renderCompliance();
   console.info(V26_MARKER);
+})();
+</script>
+
+
+<!-- Yard Line v28 - client meeting workflow completion -->
+<style id="yardline-v28-styles">
+.v28-row-downloads{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.v28-row-downloads .row-action{min-height:30px;padding:5px 8px}
+.employee-certificate-editor{display:grid!important}
+.v28-existing-cert-head,.v28-draft-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.v28-existing-cert-head strong,.v28-draft-head strong{font-size:13.5px;color:#253142}
+.v28-existing-cert-head span,.v28-draft-head span{font-size:12.5px;color:#718096}
+.v28-cert-builder{display:grid;gap:10px;padding-top:2px}
+.v28-cert-builder-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.v28-cert-builder-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.v28-multi-upload{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center}
+.v28-multi-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.v28-draft-cert-rows{display:grid;gap:8px}
+.v28-draft-cert-row{display:grid;grid-template-columns:minmax(150px,1.25fr) minmax(118px,.8fr) minmax(118px,.8fr) minmax(190px,1.2fr) auto;gap:9px;align-items:end;padding:10px;border:1px solid #dde5ef;border-radius:10px;background:#fff}
+.v28-draft-cert-row label{min-width:0;display:flex;flex-direction:column;gap:5px}
+.v28-draft-cert-row label>span{font-size:11.5px;text-transform:uppercase;letter-spacing:.45px;color:#6d7888;font-weight:750}
+.v28-draft-cert-row input{width:100%;min-height:39px;border:1px solid #d9dfe7;border-radius:8px;padding:8px 9px;background:#fff;color:#263244}
+.v28-draft-cert-row .v28-draft-file{padding:7px 8px}
+.v28-draft-file-name{display:block;margin-top:3px;color:#7a8594;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.v28-draft-remove{min-height:39px}
+.v28-inline-note{padding:10px 12px;border-radius:9px;background:#f5f8ff;border:1px solid #dce6fb;color:#526176;font-size:12.5px;line-height:1.45}
+.v28-download-file{white-space:nowrap}
+.vehicle-doc-row{grid-template-columns:minmax(130px,1fr) 120px 100px auto auto!important}
+.v28-proposal-upload{padding:16px 17px;margin-bottom:12px}
+.v28-proposal-grid{display:grid;grid-template-columns:1.25fr .8fr 1fr .8fr;gap:10px;align-items:end}
+.v28-proposal-grid label{display:flex;flex-direction:column;gap:6px;min-width:0}
+.v28-proposal-grid label>span{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:#697586;font-weight:750}
+.v28-proposal-grid input,.v28-proposal-grid select,.v28-proposal-grid textarea{width:100%;min-height:40px;border:1px solid #d9dfe7;border-radius:8px;padding:8px 10px;background:#fff;color:#263244}
+.v28-proposal-grid .proposal-notes{grid-column:1/3}
+.v28-proposal-grid .proposal-files{grid-column:3/5}
+.v28-proposal-grid .proposal-submit{grid-column:4;justify-self:end}
+.v28-proposal-help{grid-column:1/4;color:#748093;font-size:12px;line-height:1.45}
+.v28-proposal-table th:first-child,.v28-proposal-table td:first-child{width:42px;text-align:center}
+.v28-proposal-file{display:flex;flex-direction:column;gap:2px;min-width:0}
+.v28-proposal-file strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px}
+.v28-proposal-file small{font-size:11.5px;color:#7a8594}
+.v28-bulk-download{white-space:nowrap}
+@media(max-width:1250px){.v28-draft-cert-row{grid-template-columns:1fr 1fr}.v28-draft-cert-row .v28-draft-file-wrap{grid-column:1/-1}.v28-draft-remove{justify-self:start}.v28-proposal-grid{grid-template-columns:1fr 1fr}.v28-proposal-grid .proposal-notes,.v28-proposal-grid .proposal-files,.v28-proposal-grid .proposal-submit,.v28-proposal-help{grid-column:auto}}
+@media(max-width:760px){.v28-draft-cert-row,.v28-proposal-grid{grid-template-columns:1fr}.v28-draft-cert-row .v28-draft-file-wrap,.v28-proposal-grid .proposal-notes,.v28-proposal-grid .proposal-files,.v28-proposal-grid .proposal-submit,.v28-proposal-help{grid-column:1}.v28-proposal-grid .proposal-submit{justify-self:stretch}.v28-row-downloads{justify-content:flex-start}}
+@media(max-width:820px){.vehicle-doc-row{grid-template-columns:1fr 1fr!important}.vehicle-doc-row .row-action{justify-self:start}}
+</style>
+<script>
+(function(){
+  'use strict';
+  const V28='Yard Line v28 - client meeting workflow completion';
+  if(window.__yardlineV28Loaded)return;window.__yardlineV28Loaded=true;
+  if(!Array.isArray(state.internalProposals))state.internalProposals=[];
+  let employeeDraftContext='__none__';
+  let proposalSelection=new Set();
+
+  window.ensureFlexibleCertificateType=function(name){
+    const clean=String(name||'').trim();
+    let t=state.certificateTypes.find(x=>String(x.name||'').toLowerCase()===clean.toLowerCase());
+    if(t)return t;
+    t={id:uid('CT'),name:clean,category:'Other',sourceCount:0,reminderDays:30,active:true,documentRequired:true,requirementMode:'optional',requiredRoles:[],requiredCustomers:[],requiredEmployees:[]};
+    state.certificateTypes.push(t);
+    return t;
+  };
+
+  function setupEmployeeCertificateBuilder(){
+    const editor=document.getElementById('employeeCertificateEditor');if(!editor)return;
+    editor.innerHTML=
+      '<div class="employee-certificate-editor-head">'+
+        '<div><strong>Certificates & training</strong><span>Add every certificate on this same employee screen. Use free-text names for new certificate types; they will be added to Certificate Master automatically.</span></div>'+
+        '<div class="v28-cert-builder-actions"><button type="button" class="secondary-button" id="employeeDraftAddRow">+ Add Certificate</button><label class="secondary-button v28-multi-upload">+ Add Multiple Files<input id="employeeDraftMultiFiles" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple></label></div>'+
+      '</div>'+
+      '<div class="v28-inline-note">Each certificate can be entered as a separate row with its own name and file. Add as many rows as required now or in future.</div>'+
+      '<div class="v28-existing-cert-head"><div><strong>Existing certificates</strong><span id="v28ExistingCertCount"></span></div></div>'+
+      '<div id="employeeEditCertificateList" class="employee-edit-certificate-list"></div>'+
+      '<div class="v28-cert-builder">'+
+        '<div class="v28-draft-head"><div><strong>Certificates to add with this save</strong><span id="v28DraftCertCount">0 pending</span></div></div>'+
+        '<div id="employeeDraftCertificateRows" class="v28-draft-cert-rows"></div>'+
+      '</div>';
+
+    document.getElementById('employeeDraftAddRow').addEventListener('click',()=>{const row=addEmployeeDraftCertificateRow();row.querySelector('.v28-draft-name').focus()});
+    document.getElementById('employeeDraftMultiFiles').addEventListener('change',e=>{
+      const files=[...e.target.files];
+      files.forEach(file=>addEmployeeDraftCertificateRow(file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim(),file));
+      e.target.value='';updateEmployeeDraftCount();
+    });
+  }
+
+  function addEmployeeDraftCertificateRow(name='',file=null,issue='',expiry=''){
+    const host=document.getElementById('employeeDraftCertificateRows');if(!host)return null;
+    const row=document.createElement('div');row.className='v28-draft-cert-row';row.dataset.draftId=uid('DRAFT');
+    row.innerHTML=
+      '<label><span>Certificate Name</span><input class="v28-draft-name" placeholder="e.g. Confined Space Entry"></label>'+
+      '<label><span>Issue Date</span><input class="v28-draft-issue" type="date"></label>'+
+      '<label><span>Expiry Date</span><input class="v28-draft-expiry" type="date"></label>'+
+      '<label class="v28-draft-file-wrap"><span>Certificate Copy</span><input class="v28-draft-file" type="file" accept=".pdf,.jpg,.jpeg,.png"><small class="v28-draft-file-name">No file selected</small></label>'+
+      '<button type="button" class="secondary-button danger-row v28-draft-remove">Remove</button>';
+    row.querySelector('.v28-draft-name').value=name||'';
+    row.querySelector('.v28-draft-issue').value=issue||'';
+    row.querySelector('.v28-draft-expiry').value=expiry||'';
+    row._draftFile=file||null;
+    const fileName=row.querySelector('.v28-draft-file-name');
+    if(file){fileName.textContent=file.name;fileName.title=file.name}
+    row.querySelector('.v28-draft-file').addEventListener('change',e=>{row._draftFile=e.target.files[0]||null;fileName.textContent=row._draftFile?row._draftFile.name:'No file selected';fileName.title=row._draftFile?.name||''});
+    row.querySelector('.v28-draft-remove').addEventListener('click',()=>{row.remove();updateEmployeeDraftCount()});
+    host.appendChild(row);updateEmployeeDraftCount();return row;
+  }
+  window.addEmployeeDraftCertificateRow=addEmployeeDraftCertificateRow;
+
+  function updateEmployeeDraftCount(){const n=document.querySelectorAll('#employeeDraftCertificateRows .v28-draft-cert-row').length,el=document.getElementById('v28DraftCertCount');if(el)el.textContent=n+' pending'}
+  window.resetEmployeeDraftCertificates=function(withFirst=false){const host=document.getElementById('employeeDraftCertificateRows');if(host)host.innerHTML='';updateEmployeeDraftCount();if(withFirst)addEmployeeDraftCertificateRow()};
+
+  window.collectEmployeeDraftCertificates=function(existing){
+    const rows=[...document.querySelectorAll('#employeeDraftCertificateRows .v28-draft-cert-row')],items=[],seen=new Set((existing?.certificates||[]).map(c=>String(c.type||'').trim().toLowerCase()));
+    for(const row of rows){
+      const name=row.querySelector('.v28-draft-name').value.trim(),issue=row.querySelector('.v28-draft-issue').value,expiry=row.querySelector('.v28-draft-expiry').value,file=row._draftFile||row.querySelector('.v28-draft-file').files[0]||null;
+      const touched=!!(name||issue||expiry||file);if(!touched)continue;
+      if(!name)return{error:'Enter a certificate name for every certificate row before saving.',title:'Certificate name required',items:[]};
+      if(!file)return{error:name+' requires a certificate file before the employee can be saved.',title:'Certificate copy required',items:[]};
+      if(invalidRange(issue,expiry))return{error:name+' has an expiry date earlier than its issue date.',title:'Invalid certificate dates',items:[]};
+      const key=name.toLowerCase();if(seen.has(key))return{error:name+' is already recorded for this employee or appears more than once in the pending list.',title:'Duplicate certificate',items:[]};
+      seen.add(key);items.push({name,issue,expiry,file});
+    }
+    return{items};
+  };
+
+  window.renderEmployeeEditCertificates=function(emp){
+    const editor=document.getElementById('employeeCertificateEditor'),list=document.getElementById('employeeEditCertificateList');if(!editor||!list)return;
+    editor.classList.add('active');
+    const context=emp?String(emp.id):'__new__';
+    if(employeeDraftContext!==context){employeeDraftContext=context;resetEmployeeDraftCertificates(!emp)}
+    const certs=emp?.certificates||[];
+    const count=document.getElementById('v28ExistingCertCount');if(count)count.textContent=certs.length?(certs.length+' saved'):'No saved certificates yet';
+    list.innerHTML=certs.length?certs.map(c=>{
+      const r=trainingRecordRisk(c),download=c.fileName?'<button type="button" class="row-action v28-download-file" onclick="v28DownloadAttachment(\''+esc(c.id)+'\',\''+esc(c.fileName)+'\')">Download</button>':'';
+      return '<div class="employee-edit-certificate-row"><strong>'+esc(c.type)+'</strong><span>'+(c.expiry?fmt(c.expiry):'No expiry')+'</span><span>'+esc(r)+'</span><div class="certificate-record-actions">'+download+'<button type="button" class="row-action" onclick="openCertificateRecordEditor(\''+esc(emp.id)+'\',\''+esc(c.id)+'\',\'employee-edit\')">Edit</button><button type="button" class="row-action primary-row" onclick="openRenewalFor(\''+esc(emp.id)+'\',\''+esc(c.type)+'\')">Renew</button><button type="button" class="row-action danger-row" onclick="openCertificateDeleteConfirm(\''+esc(emp.id)+'\',\''+esc(c.id)+'\',\'employee-edit\')">Delete</button></div></div>';
+    }).join(''):'<div class="employee-certificate-empty">No saved certificate records yet. Use + Add Certificate or + Add Multiple Files below.</div>';
+  };
+
+  async function v28DownloadAttachment(id,name){
+    const url=await getStoredFileUrl(id);if(!url)return notify('File unavailable','The record contains '+(name||'a filename')+', but the original uploaded file is not stored in this browser.');
+    try{const res=await fetch(url),blob=await res.blob();downloadBlob(blob,name||'YardLine_Document')}catch(e){console.error(e);notify('Download failed','The stored file could not be downloaded.')}
+  }
+  window.v28DownloadAttachment=v28DownloadAttachment;
+
+  async function filesForRecord(type,id){
+    const rec=(type==='employee'?state.employees:state.vehicles).find(x=>String(x.id)===String(id));if(!rec)return[];
+    return type==='employee'?(rec.certificates||[]).filter(x=>x.fileName):(rec.documents||[]).filter(x=>x.fileName);
+  }
+  window.v28DownloadRecordFiles=async function(type,id){
+    const files=await filesForRecord(type,id);if(!files.length)return notify('No files','There are no attached files recorded for this '+type+'.');
+    let done=0,missing=0;for(const x of files){const url=await getStoredFileUrl(x.id);if(!url){missing++;continue}try{const res=await fetch(url),blob=await res.blob();downloadBlob(blob,x.fileName||('YardLine_'+type+'_file'));done++;await new Promise(r=>setTimeout(r,120))}catch{missing++}}
+    notify('File download',done+' file'+(done===1?'':'s')+' downloaded'+(missing?'; '+missing+' source file'+(missing===1?' is':'s are')+' unavailable in this browser.':'.'));
+  };
+
+  function checkedMasterIds(type){
+    const table=document.querySelector(type==='employee'?'.employee-table':'.vehicle-table');if(!table)return[];
+    return [...table.querySelectorAll('tbody tr')].filter(tr=>tr.querySelector('.master-row-check input:checked')).map(tr=>tr.dataset.masterId).filter(Boolean);
+  }
+  window.v28DownloadSelectedFiles=async function(type){
+    const ids=checkedMasterIds(type);if(!ids.length)return notify('Select records','Choose at least one '+type+' first.');
+    let total=0,done=0,missing=0;
+    for(const id of ids){const files=await filesForRecord(type,id);total+=files.length;for(const x of files){const url=await getStoredFileUrl(x.id);if(!url){missing++;continue}try{const res=await fetch(url),blob=await res.blob();downloadBlob(blob,x.fileName||'YardLine_File');done++;await new Promise(r=>setTimeout(r,120))}catch{missing++}}}
+    if(!total)return notify('No files','The selected records have no attached files.');
+    notify('Multi-download complete',done+' file'+(done===1?'':'s')+' downloaded'+(missing?'; '+missing+' source file'+(missing===1?' is':'s are')+' unavailable in this browser.':'.'));
+  };
+
+  function enhanceBulkFileButton(type){
+    const bar=document.getElementById(type+'BulkBar'),actions=bar?.querySelector('.bulk-action-right');if(!actions||actions.querySelector('.v28-bulk-download'))return;
+    const b=document.createElement('button');b.className='secondary-button v24-bulk-dependent v28-bulk-download';b.type='button';b.textContent='Download Files';b.onclick=()=>v28DownloadSelectedFiles(type);
+    const excel=actions.querySelector('button.primary-button');actions.insertBefore(b,excel||null);
+  }
+  function enhanceMasterRowDownloads(type){
+    const table=document.querySelector(type==='employee'?'.employee-table':'.vehicle-table');if(!table)return;
+    [...table.querySelectorAll('tbody tr')].forEach(tr=>{
+      const id=tr.dataset.masterId,cell=tr.lastElementChild;if(!id||!cell||cell.querySelector('.v28-row-downloads'))return;
+      const g=cell.querySelector('.row-action-group')||cell,wrap=document.createElement('span');wrap.className='v28-row-downloads';
+      const pdf=document.createElement('button');pdf.type='button';pdf.className='row-action';pdf.textContent='PDF';pdf.addEventListener('click',()=>v24DownloadOverview(type,[String(id)]));
+      const files=document.createElement('button');files.type='button';files.className='row-action';files.textContent='Files';files.addEventListener('click',()=>v28DownloadRecordFiles(type,String(id)));
+      wrap.append(pdf,files);g.appendChild(wrap);
+    });
+  }
+  const baseRenderEmployeesV28=renderEmployees;renderEmployees=function(){baseRenderEmployeesV28();enhanceBulkFileButton('employee');enhanceMasterRowDownloads('employee')};
+  const baseRenderVehiclesV28=renderVehicles;renderVehicles=function(){baseRenderVehiclesV28();enhanceBulkFileButton('vehicle');enhanceMasterRowDownloads('vehicle')};
+
+  function enhanceProfileDownloads(empId){
+    const emp=employeeById(empId),root=document.getElementById('employeeProfileContent');if(!emp||!root)return;
+    const section=[...root.querySelectorAll('.profile-section')].find(x=>x.querySelector('.profile-section-head h4')?.textContent.trim()==='Training & certification');if(!section)return;
+    const rows=[...section.querySelectorAll('tbody tr')];(emp.certificates||[]).forEach((c,i)=>{if(!c.fileName)return;const action=rows[i]?.querySelector('.profile-cert-actions');if(action&&!action.querySelector('.v28-cert-download'))action.insertAdjacentHTML('afterbegin','<button class="row-action v28-cert-download" onclick="v28DownloadAttachment(\''+esc(c.id)+'\',\''+esc(c.fileName)+'\')">Download</button>')});
+  }
+  const baseOpenEmployeeV28=window.openEmployee;window.openEmployee=id=>{baseOpenEmployeeV28(id);enhanceProfileDownloads(id)};
+
+  function enhanceVehicleDocDownloads(id){
+    const v=state.vehicles.find(x=>String(x.id)===String(id)),host=document.getElementById('recordModalContent');if(!v||!host)return;
+    const rows=[...host.querySelectorAll('.vehicle-doc-row')];(v.documents||[]).forEach((doc,i)=>{if(!doc.fileName)return;const row=rows[i];if(row&&!row.querySelector('.v28-doc-download')){const b=document.createElement('button');b.className='row-action v28-doc-download';b.textContent='Download';b.onclick=()=>v28DownloadAttachment(doc.id,doc.fileName);row.appendChild(b)}});
+  }
+  const baseOpenVehicleV28=window.openVehicle;window.openVehicle=id=>{baseOpenVehicleV28(id);enhanceVehicleDocDownloads(id)};
+
+  const baseRenderCustomersV28=renderCustomers;renderCustomers=function(){baseRenderCustomersV28();renderProposalCustomerOptions()};
+  const baseRenderComplianceV28=renderCompliance;renderCompliance=function(){baseRenderComplianceV28();document.querySelectorAll('#complianceTableBody tr').forEach(tr=>{const review=[...tr.querySelectorAll('button')].find(b=>/openComplianceRecord/.test(b.getAttribute('onclick')||''));if(!review)return;const m=(review.getAttribute('onclick')||'').match(/openComplianceRecord\('([^']+)'\)/);if(!m)return;const r=complianceRows().find(x=>String(x.id)===String(m[1]));if(!r?.fileName)return;const stack=review.closest('.action-stack')||review.parentElement;if(stack&&!stack.querySelector('.v28-compliance-download'))stack.insertAdjacentHTML('beforeend','<button class="row-action v28-compliance-download" onclick="v28DownloadAttachment(\''+esc(r.id)+'\',\''+esc(r.fileName)+'\')">Download</button>')})};
+
+  function addCertificateModalDownload(){
+    const box=document.getElementById('certificateCurrentFileBox');if(!box||document.getElementById('certificateCurrentFileDownload'))return;
+    const b=document.createElement('button');b.type='button';b.className='row-action';b.id='certificateCurrentFileDownload';b.textContent='Download';
+    b.addEventListener('click',()=>{const eid=document.getElementById('certificateRecordEmployeeId').value,cid=document.getElementById('certificateRecordId').value,e=employeeById(eid),c=e?.certificates.find(x=>String(x.id)===String(cid));if(c?.fileName)v28DownloadAttachment(c.id,c.fileName);else notify('No file','No certificate file is attached to this record.')});
+    box.appendChild(b);
+  }
+
+  function setupInternalProposals(){
+    const firstNav=document.querySelector('.sidebar .nav-section');if(firstNav&&!firstNav.querySelector('[data-page="proposals"]')){
+      const labels=[...firstNav.querySelectorAll('.nav-label')],complianceLabel=labels.find(x=>x.textContent.trim()==='Compliance');
+      const label=document.createElement('div');label.className='nav-label nav-label-spaced';label.textContent='Documents';
+      const btn=document.createElement('button');btn.className='nav-item';btn.dataset.page='proposals';btn.innerHTML='<span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/></svg></span><span>Internal Proposals</span>';
+      if(complianceLabel){firstNav.insertBefore(label,complianceLabel);firstNav.insertBefore(btn,complianceLabel)}else{firstNav.append(label,btn)}
+      btn.addEventListener('click',()=>{navigate('proposals');renderInternalProposals()});
+    }
+    if(!document.getElementById('proposals')){
+      const page='<section id="proposals" class="page">'+
+        '<div class="page-intro-row"><div><span class="eyebrow">Document control</span><h2>Internal Proposals</h2><p>Upload proposal documents on the same screen, select multiple records and download them individually or together.</p></div></div>'+
+        '<div class="panel v28-proposal-upload"><div class="panel-header"><div><span class="eyebrow">Inline upload area</span><h3>Upload proposal documents</h3></div></div>'+
+          '<form id="internalProposalForm" class="v28-proposal-grid">'+
+            '<label><span>Proposal Title</span><input id="proposalTitle" required placeholder="e.g. Fleet manpower proposal"></label>'+
+            '<label><span>Reference</span><input id="proposalReference" placeholder="PROP-001"></label>'+
+            '<label><span>Customer</span><select id="proposalCustomer"></select></label>'+
+            '<label><span>Status</span><select id="proposalStatus"><option>Draft</option><option>Internal Review</option><option>Submitted</option><option>Approved</option><option>Archived</option></select></label>'+
+            '<label class="proposal-notes"><span>Notes</span><textarea id="proposalNotes" placeholder="Optional internal remarks"></textarea></label>'+
+            '<label class="proposal-files"><span>Proposal Files</span><input id="proposalFiles" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" multiple required><small class="field-help">Select one or many files; every selected file is saved against this proposal entry.</small></label>'+
+            '<div class="v28-proposal-help">No separate upload screen is required. Select multiple proposal files here and save them together.</div>'+
+            '<button class="primary-button proposal-submit" type="submit">Upload Proposal Files</button>'+
+          '</form>'+
+        '</div>'+
+        '<div class="page-toolbar"><div class="search-box"><span>⌕</span><input id="proposalSearch" type="search" placeholder="Search proposal, reference, customer or filename"></div><div class="toolbar-actions"><select id="proposalStatusFilter"><option value="all">All statuses</option><option>Draft</option><option>Internal Review</option><option>Submitted</option><option>Approved</option><option>Archived</option></select></div></div>'+
+        '<div class="summary-chips" id="proposalSummary"></div>'+
+        '<div class="bulk-action-bar" id="proposalBulkBar"><div class="bulk-action-left"><span class="bulk-selection-count"><strong id="proposalSelectedCount">0</strong> selected</span><button class="secondary-button" type="button" id="proposalSelectVisible">Select visible</button><button class="text-button" type="button" id="proposalClearSelection">Clear</button></div><div class="bulk-action-right"><button class="primary-button" type="button" id="proposalDownloadSelected">Download Selected</button></div></div>'+
+        '<div class="panel no-padding"><div class="table-wrap master-table"><table class="wide-table v28-proposal-table"><thead><tr><th><input id="proposalSelectAll" type="checkbox" aria-label="Select all visible proposals"></th><th>Proposal</th><th>Reference</th><th>Customer</th><th>Date</th><th>Status</th><th>File</th><th>Action</th></tr></thead><tbody id="proposalTableBody"></tbody></table></div></div>'+
+      '</section>';
+      const notifications=document.getElementById('notifications');if(notifications)notifications.insertAdjacentHTML('beforebegin',page);else document.querySelector('.main-area')?.insertAdjacentHTML('beforeend',page);
+    }
+    meta.proposals=['Internal Proposals','Inline proposal document upload, selection and download management.'];
+    renderProposalCustomerOptions();
+    document.getElementById('internalProposalForm')?.addEventListener('submit',saveInternalProposals);
+    document.getElementById('proposalSearch')?.addEventListener('input',renderInternalProposals);
+    document.getElementById('proposalStatusFilter')?.addEventListener('change',renderInternalProposals);
+    document.getElementById('proposalSelectVisible')?.addEventListener('click',()=>{const rows=visibleProposalRecords(),all=rows.length&&rows.every(x=>proposalSelection.has(x.id));rows.forEach(x=>all?proposalSelection.delete(x.id):proposalSelection.add(x.id));renderInternalProposals()});
+    document.getElementById('proposalClearSelection')?.addEventListener('click',()=>{proposalSelection.clear();renderInternalProposals()});
+    document.getElementById('proposalSelectAll')?.addEventListener('change',e=>{visibleProposalRecords().forEach(x=>e.target.checked?proposalSelection.add(x.id):proposalSelection.delete(x.id));renderInternalProposals()});
+    document.getElementById('proposalDownloadSelected')?.addEventListener('click',downloadSelectedProposals);
+  }
+
+  function renderProposalCustomerOptions(){
+    const sel=document.getElementById('proposalCustomer');if(!sel)return;const current=sel.value;
+    sel.innerHTML='<option value="-">Internal / no customer</option>'+state.customers.map(c=>'<option value="'+esc(c.name)+'">'+esc(c.name)+'</option>').join('');
+    if([...sel.options].some(o=>o.value===current))sel.value=current;
+  }
+  function visibleProposalRecords(){
+    const q=(document.getElementById('proposalSearch')?.value||'').toLowerCase(),status=document.getElementById('proposalStatusFilter')?.value||'all';
+    return state.internalProposals.filter(p=>(status==='all'||p.status===status)&&[p.title,p.reference,p.customer,p.fileName,p.status].join(' ').toLowerCase().includes(q));
+  }
+  window.renderInternalProposals=function(){
+    const list=visibleProposalRecords(),body=document.getElementById('proposalTableBody');if(!body)return;
+    const statuses=['Draft','Internal Review','Submitted','Approved','Archived'];
+    document.getElementById('proposalSummary').innerHTML=[['Total proposals',state.internalProposals.length],['Draft',state.internalProposals.filter(x=>x.status==='Draft').length],['In review',state.internalProposals.filter(x=>x.status==='Internal Review').length],['Approved',state.internalProposals.filter(x=>x.status==='Approved').length]].map(x=>'<div class="summary-chip"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('');
+    body.innerHTML=list.length?list.map(p=>'<tr data-proposal-id="'+esc(p.id)+'"><td><input class="proposal-row-check" type="checkbox" '+(proposalSelection.has(p.id)?'checked':'')+' aria-label="Select proposal"></td><td><div class="entity-meta"><strong>'+esc(p.title)+'</strong><span>'+esc(p.notes||'Internal proposal document')+'</span></div></td><td>'+esc(p.reference||'—')+'</td><td>'+esc(p.customer||'—')+'</td><td>'+fmt(p.createdDate)+'</td><td>'+badge(p.status==='Approved'?'Valid':p.status==='Archived'?'Awaiting':p.status==='Submitted'?'Upcoming':'Due Soon')+'<div class="status-note">'+esc(p.status)+'</div></td><td><div class="v28-proposal-file"><strong title="'+esc(p.fileName)+'">'+esc(p.fileName)+'</strong><small>Uploaded '+fmt(p.createdDate)+'</small></div></td><td><div class="row-action-group"><button class="row-action" onclick="downloadInternalProposal(\''+esc(p.id)+'\')">Download</button><button class="row-action danger-row" onclick="deleteInternalProposal(\''+esc(p.id)+'\')">Delete</button></div></td></tr>').join(''):'<tr><td colspan="8"><div class="empty-state">No internal proposals match the current view.</div></td></tr>';
+    body.querySelectorAll('.proposal-row-check').forEach(c=>c.addEventListener('change',e=>{const id=e.target.closest('tr').dataset.proposalId;e.target.checked?proposalSelection.add(id):proposalSelection.delete(id);updateProposalSelectionUi()}));
+    updateProposalSelectionUi();
+  };
+  function updateProposalSelectionUi(){const visible=visibleProposalRecords(),selected=visible.filter(x=>proposalSelection.has(x.id)).length,all=visible.length&&selected===visible.length,head=document.getElementById('proposalSelectAll');document.getElementById('proposalSelectedCount').textContent=proposalSelection.size;if(head){head.checked=!!all;head.indeterminate=selected>0&&!all}}
+  async function saveInternalProposals(e){e.preventDefault();const files=[...document.getElementById('proposalFiles').files];if(!files.length)return notify('Files required','Select at least one proposal document.');const title=document.getElementById('proposalTitle').value.trim(),reference=document.getElementById('proposalReference').value.trim(),customer=document.getElementById('proposalCustomer').value||'-',status=document.getElementById('proposalStatus').value,notes=document.getElementById('proposalNotes').value.trim(),createdDate=todayIso();for(const file of files){const p={id:uid('PROP'),title:files.length>1?(title+' - '+file.name.replace(/\.[^.]+$/,'')):title,reference,customer,status,notes,fileName:file.name,createdDate};state.internalProposals.unshift(p);rememberFile(p.id,file)}saveState();e.target.reset();renderProposalCustomerOptions();renderInternalProposals();notify('Proposal files uploaded',files.length+' file'+(files.length===1?'':'s')+' saved in Internal Proposals.')}
+  window.downloadInternalProposal=async function(id){const p=state.internalProposals.find(x=>x.id===id);if(!p)return;await v28DownloadAttachment(p.id,p.fileName)};
+  window.deleteInternalProposal=async function(id){const p=state.internalProposals.find(x=>x.id===id);if(!p)return;if(!confirm('Delete '+p.fileName+' from Internal Proposals?'))return;state.internalProposals=state.internalProposals.filter(x=>x.id!==id);proposalSelection.delete(id);await forgetFile(id);saveState();renderInternalProposals();notify('Proposal deleted',p.fileName+' was removed.')};
+  async function downloadSelectedProposals(){const list=state.internalProposals.filter(x=>proposalSelection.has(x.id));if(!list.length)return notify('Select proposals','Choose at least one proposal file first.');let done=0,missing=0;for(const p of list){const url=await getStoredFileUrl(p.id);if(!url){missing++;continue}try{const res=await fetch(url),blob=await res.blob();downloadBlob(blob,p.fileName);done++;await new Promise(r=>setTimeout(r,120))}catch{missing++}}notify('Proposal multi-download',done+' file'+(done===1?'':'s')+' downloaded'+(missing?'; '+missing+' unavailable in this browser.':'.'))}
+
+  window.v28PrepareNewEmployeeCertificates=function(){
+    employeeDraftContext='__new__-'+Date.now();
+    resetEmployeeDraftCertificates(true);
+    const count=document.getElementById('v28ExistingCertCount');if(count)count.textContent='No saved certificates yet';
+    const list=document.getElementById('employeeEditCertificateList');if(list)list.innerHTML='<div class="employee-certificate-empty">No saved certificate records yet. Use + Add Certificate or + Add Multiple Files below.</div>';
+  };
+  document.querySelectorAll('[data-open-modal="employeeModal"]').forEach(btn=>btn.addEventListener('click',()=>setTimeout(()=>{if(!document.getElementById('employeeForm')?.dataset.editId)window.v28PrepareNewEmployeeCertificates()},0)));
+  const baseNavigateV28=navigate;navigate=function(page){baseNavigateV28(page);if(page==='proposals'){renderProposalCustomerOptions();renderInternalProposals()}};
+  setupEmployeeCertificateBuilder();
+  addCertificateModalDownload();
+  setupInternalProposals();
+
+  // Re-run master renderers once so same-row downloads and the checked-record file button appear immediately.
+  renderEmployees();renderVehicles();renderInternalProposals();
+  console.info(V28);
 })();
 </script>
 
