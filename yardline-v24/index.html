@@ -3448,7 +3448,7 @@ renderAll();updateAssignmentFields();
   if(window.__yardlineV28Loaded)return;window.__yardlineV28Loaded=true;
   if(!Array.isArray(state.internalProposals))state.internalProposals=[];
   let employeeDraftContext='__none__';
-  let proposalSelection=new Set();
+  let proposalSelection=new Set();window.__yardlineProposalSelection=proposalSelection;
 
   window.ensureFlexibleCertificateType=function(name){
     const clean=String(name||'').trim();
