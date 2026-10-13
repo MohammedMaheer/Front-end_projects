@@ -158,6 +158,8 @@
     }
   }
   function selectedProposals() {
+    const selections = window.__yardlineProposalSelection;
+    if (selections instanceof Set) return (state.internalProposals || []).filter(p => selections.has(p.id));
     return [...document.querySelectorAll('#proposalTableBody tr[data-proposal-id]')]
       .filter(row => row.querySelector('.proposal-row-check:checked'))
       .map(row => (state.internalProposals || []).find(p => String(p.id) === row.dataset.proposalId))
